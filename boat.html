@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Boate Simulator - Isometric Edition</title>
+  <style>
+    :root {
+      --primary-neon: #00f2ff;
+      --secondary-neon: #ff00ea;
+      --accent-neon: #bc00ff;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0a0a0a;
+      color: white;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #club {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-image: url('assets/nightclub_iso.png');
+      background-size: cover;
+      background-position: center;
+      display: none;
+      overflow: hidden;
+    }
+
+    /* Ambient Lighting */
+    #club::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.4) 100%);
+      pointer-events: none;
+    }
+
+    .character {
+      position: absolute;
+      width: 60px;
+      height: 100px;
+      background-image: url('assets/characters_iso.png');
+      background-size: 400px 300px;
+      /* Assuming a grid-like sheet */
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.3s;
+      z-index: 10;
+    }
+
+    .character:hover {
+      filter: brightness(1.3) drop-shadow(0 0 8px var(--primary-neon));
+      transform: scale(1.1);
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .dancing {
+      animation: bounce 0.6s infinite alternate ease-in-out;
+    }
+
+    #dj-booth {
+      position: absolute;
+      left: 48%;
+      top: 40%;
+      width: 120px;
+      height: 100px;
+      background-image: url('assets/dj_iso.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    #info-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 1px solid var(--primary-neon);
+      box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+      z-index: 100;
+      backdrop-filter: blur(5px);
+    }
+
+    #mission-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 1px solid var(--secondary-neon);
+      box-shadow: 0 0 15px rgba(255, 0, 234, 0.3);
+      z-index: 100;
+      backdrop-filter: blur(5px);
+    }
+
+    #status-msg {
+      position: absolute;
+      bottom: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: var(--primary-neon);
+      text-shadow: 0 0 10px var(--primary-neon);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 200;
+    }
+
+    #inicio,
+    #fim {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, #1a0033 0%, #000 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 500;
+    }
+
+    .btn {
+      padding: 15px 45px;
+      font-size: 20px;
+      background: linear-gradient(45deg, var(--accent-neon), var(--secondary-neon));
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 30px;
+      box-shadow: 0 0 20px rgba(188, 0, 255, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 35px rgba(188, 0, 255, 0.8);
+    }
+
+    .mega-tip {
+      position: absolute;
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 20px;
+      pointer-events: none;
+      animation: floatUp 1s forwards;
+      z-index: 300;
+    }
+
+    @keyframes floatUp {
+      0% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="inicio">
+    <h1 style="font-size: 48px; margin-bottom: 5px;">BOATE <span style="color: var(--primary-neon)">DOIDA</span></h1>
+    <p style="color: #aaa; margin-top: 5px;">O melhor simulador de nightlife isométrico</p>
+    <button class="btn" onclick="iniciarJogo()">ENTRAR NO CLUB</button>
+  </div>
+
+  <div id="club">
+    <div id="info-panel">
+      <div style="font-size: 14px; color: #888">PROMOTOR</div>
+      <div id="jogador" style="font-size: 20px; font-weight: bold; color: var(--primary-neon)">---</div>
+      <div style="margin-top: 10px;">FAMA: <span id="fama" style="color: #00ff00">0</span></div>
+    </div>
+
+    <div id="mission-panel">
+      <div style="font-size: 14px; color: #888">OBJETIVO ATUAL</div>
+      <div id="missao" style="font-size: 18px; color: var(--secondary-neon)">Conectando...</div>
+    </div>
+
+    <div id="status-msg">BOA!</div>
+
+    <div id="dj-booth" onclick="interagirDJ()"></div>
+
+    <div id="world">
+      <!-- Personagens serão gerados aqui -->
+    </div>
+  </div>
+
+  <div id="fim" style="display: none;">
+    <h1>NOITE <span style="color: var(--accent-neon)">FINALIZADA</span></h1>
+    <p>Sua fama alcançou: <span id="famaFinal" style="font-size: 32px; color: #00ff00">0</span></p>
+    <button class="btn" onclick="location.reload()">REINICIAR</button>
+  </div>
+
+  <audio id="player" loop></audio>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+    let nomeJogador = "";
+    let fama = 0;
+    let missaoAtual = 0;
+    let musicasTrocadas = 0;
+
+    const missoes = [
+      "Anime a pista! (Interaja com 3 pessoas)",
+      "Troque 3 batidas no DJ booth!",
+      "Aqueça o club! Consiga 50 de Fama",
+      "Noite lendária! Consiga 100 de Fama",
+      "Parabéns! Você é o Rei da Noite!"
+    ];
+
+    async function iniciarJogo() {
+      nomeJogador = prompt("Qual seu nome de DJ?", "DJ Crazy");
+      if (!nomeJogador) nomeJogador = "Anonimo";
+
+      document.getElementById('jogador').innerText = nomeJogador;
+      document.getElementById('inicio').style.display = 'none';
+      document.getElementById('club').style.display = 'block';
+
+      await carregarProgresso();
+      spawnCharacters();
+      atualizarInterface();
+      tocarMusica();
+    }
+
+    async function carregarProgresso() {
+      try {
+        const res = await fetch(`${API_URL}/progresso/${nomeJogador}`);
+        const data = await res.json();
+        fama = data.fama || 0;
+        missaoAtual = data.missao || 0;
+      } catch (e) {
+        console.warn("Backend não respondendo, jogando offline");
+      }
+    }
+
+    async function salvarProgresso() {
+      try {
+        await fetch(`${API_URL}/progresso/${nomeJogador}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fama, missao: missaoAtual })
+        });
+      } catch (e) { }
+    }
+
+    function spawnCharacters() {
+      const world = document.getElementById('world');
+      const positions = [
+        { x: 35, y: 65, char: 0 },
+        { x: 45, y: 75, char: 1 },
+        { x: 60, y: 60, char: 2 },
+        { x: 25, y: 80, char: 3 },
+        { x: 70, y: 70, char: 4 }
+      ];
+
+      positions.forEach((pos, i) => {
+        const char = document.createElement('div');
+        char.className = 'character dancing';
+        char.style.left = `${pos.x}%`;
+        char.style.top = `${pos.y}%`;
+
+        // Sprite sheet mapping (assuming characters_iso.png layout)
+        const row = Math.floor(pos.char / 4);
+        const col = pos.char % 4;
+        char.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
+
+        char.onclick = () => interagirPersonagem(char);
+        world.appendChild(char);
+      });
+    }
+
+    function interagirPersonagem(elem) {
+      showTip(elem);
+      addFama(5);
+      showStatus("DANCE!");
+
+      if (missaoAtual === 0) {
+        // Lógica simples de balcão de interações
+        elem.interacted = true;
+        const total = document.querySelectorAll('.character').length;
+        const interacted = Array.from(document.querySelectorAll('.character')).filter(c => c.interacted).length;
+        if (interacted >= 3) completarMissao();
+      }
+
+      if (fama >= 50 && missaoAtual === 2) completarMissao();
+      if (fama >= 100 && missaoAtual === 3) completarMissao();
+    }
+
+    function interagirDJ() {
+      musicasTrocadas++;
+      addFama(10);
+      showStatus("DROP THE BASS!");
+      tocarMusica();
+
+      if (missaoAtual === 1 && musicasTrocadas >= 3) {
+        completarMissao();
+      }
+    }
+
+    function addFama(val) {
+      fama += val;
+      atualizarInterface();
+      salvarProgresso();
+    }
+
+    function completarMissao() {
+      missaoAtual++;
+      addFama(20);
+      showStatus("MISSÃO CUMPRIDA!", true);
+      atualizarInterface();
+
+      if (missaoAtual >= missoes.length - 1) {
+        setTimeout(finalizarJogo, 2000);
+      }
+    }
+
+    function atualizarInterface() {
+      document.getElementById('fama').innerText = fama;
+      document.getElementById('missao').innerText = missoes[missaoAtual];
+    }
+
+    function showStatus(text, long = false) {
+      const msg = document.getElementById('status-msg');
+      msg.innerText = text;
+      msg.style.opacity = 1;
+      setTimeout(() => { msg.style.opacity = 0; }, long ? 2000 : 800);
+    }
+
+    function showTip(elem) {
+      const rect = elem.getBoundingClientRect();
+      const tip = document.createElement('div');
+      tip.className = 'mega-tip';
+      tip.innerText = "MEGA GORJETA x4!!";
+      tip.style.left = `${rect.left}px`;
+      tip.style.top = `${rect.top}px`;
+      document.body.appendChild(tip);
+      setTimeout(() => tip.remove(), 1000);
+    }
+
+    function tocarMusica() {
+      const player = document.getElementById('player');
+      const musicas = ['assets/music1.mp3', 'assets/music2.mp3', 'assets/music3.mp3'];
+      player.src = musicas[musicasTrocadas % musicas.length];
+      player.play().catch(() => console.log("Interação necessária para audio"));
+    }
+
+    function finalizarJogo() {
+      document.getElementById('club').style.display = 'none';
+      document.getElementById('fim').style.display = 'flex';
+      document.getElementById('famaFinal').innerText = fama;
+    }
+  </script>
+
+</body>
+
+</html>

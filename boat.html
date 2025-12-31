@@ -59,9 +59,14 @@
       /* 4x4 or 4x2 grid */
       cursor: pointer;
       z-index: 10;
-      transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s;
       transform-origin: bottom center;
       will-change: left, top, transform;
+    }
+
+    .character:hover {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
     }
 
     /* Boss Sheet specific */
@@ -656,6 +661,12 @@
           const row = Math.floor(index / 4);
           const col = index % 4;
           this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
+
+          // Randomize guest colors slightly for variety
+          if (role === 'GUEST') {
+            const hue = Math.floor(Math.random() * 30) - 15;
+            this.element.style.filter = `hue-rotate(${hue}deg) brightness(${0.9 + Math.random() * 0.2})`;
+          }
         }
 
         document.getElementById('world').appendChild(this.element);
@@ -1042,13 +1053,28 @@
       inventario.splice(itemIdx, 1);
 
       let reaction = "Ah, que gentil! Muito obrigada.";
-      if (npcRole === 'LIA') reaction = "Uau! Isso é lindo! Você realmente sabe como tratar uma dama.";
-      if (npcRole === 'ALEX') reaction = "Valeu, parceiro! Isso vai ajudar a manter o ânimo aqui na boate.";
-      if (npcRole === 'BOSS') reaction = "Hm... Aceitável. Continue trabalhando duro.";
+      let bonusFama = 50;
 
-      addFama(50);
+      if (npcRole === 'LIA') {
+        reaction = "Uau! Isso é lindo! Você realmente sabe como tratar uma dama. Vou dançar mais animada hoje!";
+        bonusFama = 100;
+      }
+      if (npcRole === 'ALEX') {
+        reaction = "Valeu, parceiro! Isso vai ajudar a manter o ânimo aqui na boate. Toma uma gorjeta!";
+        addMoney(20);
+      }
+      if (npcRole === 'BOSS') {
+        reaction = "Hm... Aceitável. Você tem bom gosto para alguém do seu nível.";
+        bonusFama = 150;
+      }
+      if (npcRole === 'SOFIA') {
+        reaction = "Um presente? Está tentando me subornar? Bom... eu gostei, mas não ache que vai ser fácil me vencer.";
+        bonusFama = 100;
+      }
+
+      addFama(bonusFama);
       showDialogue(npcName, reaction);
-      showStatus("PRESENTE ENTREGUE! +50 FAMA", true);
+      showStatus(`PRESENTÃO! +${bonusFama} FAMA`, true);
     }
 
     function showStatus(text, long = false) {

@@ -3,42 +3,63 @@
         "id": "vip_pass",
         "name": "VIP Pass 🎫",
         "price": 100,
-        "description": "Acesso vitalício à área VIP.",
+        "description": "Acesso vitalício à área VIP e bebidas grátis.",
         "type": "upgrade"
     },
     {
         "id": "energy_drink",
-        "name": "Energy Drink ⚡",
-        "price": 15,
-        "description": "Ganhe +50% de fama por 5 minutos.",
+        "name": "Nitro Energy ⚡",
+        "price": 25,
+        "description": "Recupera energia instantaneamente e dobra velocidade.",
         "type": "consumable"
     },
     {
         "id": "golden_mic",
         "name": "Golden Mic 🎤",
         "price": 500,
-        "description": "O dobro de fama em todas as interações.",
+        "description": "O microfone dos deuses. +200% fama em interações.",
+        "type": "gear"
+    },
+    {
+        "id": "cyber_glasses",
+        "name": "Cyber Glasses 🕶️",
+        "price": 150,
+        "description": "Permite ver o nível de felicidade real dos guests.",
         "type": "gear"
     },
     {
         "id": "gift_rose",
         "name": "Rosa de Neon 🌹",
         "price": 50,
-        "description": "Um presente elegante para conquistar alguém.",
+        "description": "Uma rosa que brilha com pulso rítmico.",
         "type": "gift"
     },
     {
         "id": "gift_champagne",
         "name": "Champagne Digital 🍾",
         "price": 200,
-        "description": "O presente supremo para os VIPs mais exigentes.",
+        "description": "A melhor safra de 2077. VIPs adoram.",
+        "type": "gift"
+    },
+    {
+        "id": "gift_pendant",
+        "name": "Pingente de Cristal 💎",
+        "price": 350,
+        "description": "Um presente de luxo extremo para NPCs especiais.",
         "type": "gift"
     },
     {
         "id": "gift_chocolate",
-        "name": "Bombom de Glitch 🍫",
-        "price": 30,
-        "description": "Um agrado doce e tecnológico.",
+        "name": "Trufas de Glitch 🍫",
+        "price": 40,
+        "description": "Adoça até o sistema mais frio.",
+        "type": "gift"
+    },
+    {
+        "id": "gift_plush",
+        "name": "Urso Pixelado 🧸",
+        "price": 80,
+        "description": "Fofo, retrô e muito valioso.",
         "type": "gift"
     }
 ]

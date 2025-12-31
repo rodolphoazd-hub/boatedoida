@@ -449,7 +449,7 @@
     <div id="bottom-bar">
       <div class="ui-button" onclick="showSpotifySearch()">🔍</div>
       <div class="ui-button" onclick="toggleShop()">🛒</div>
-      <div class="ui-button" onclick="musicasTrocadas++; interagirDJ()">🎵</div>
+      <div class="ui-button" onclick="interagirDJ()">🎵</div>
       <div class="ui-button" onclick="showSpotifySetup()">⚙️</div>
     </div>
 
@@ -585,29 +585,40 @@
         this.players = [new Audio(), new Audio()];
         this.currentPlayerIndex = 0;
         this.isCrossfading = false;
+        this.fadeInterval = null;
         this.fadeOutTime = 2000;
         this.fadeInTime = 2000;
       }
 
-      play(src) {
-        if (this.isCrossfading) return;
+      play(src, force = false) {
+        // If forcing during a crossfade, clear existing intervals
+        if (this.fadeInterval) {
+          clearInterval(this.fadeInterval);
+          this.fadeInterval = null;
+        }
+
+        if (this.isCrossfading && !force) return;
+
+        if (this.isCrossfading && force) {
+          this.isCrossfading = false;
+        }
 
         const current = this.players[this.currentPlayerIndex];
         const nextPlayerIndex = 1 - this.currentPlayerIndex;
         const next = this.players[nextPlayerIndex];
 
-        // If it's the first time playing or no src is set on current
+        // Ensure current is actually playing if not first time
         if (!current.src) {
           current.src = src;
           current.volume = 1;
-          current.play();
+          current.play().catch(e => console.warn("Audio play blocked"));
           return;
         }
 
         this.isCrossfading = true;
         next.src = src;
         next.volume = 0;
-        next.play();
+        next.play().catch(e => console.warn("Audio play blocked"));
 
         this.crossfade(current, next);
         this.currentPlayerIndex = nextPlayerIndex;
@@ -618,14 +629,17 @@
         const interval = 50;
         const step = interval / this.fadeInTime;
 
-        const fade = setInterval(() => {
+        if (this.fadeInterval) clearInterval(this.fadeInterval);
+
+        this.fadeInterval = setInterval(() => {
           vol += step;
           if (vol >= 1) {
             inPlayer.volume = 1;
             outPlayer.volume = 0;
             outPlayer.pause();
             this.isCrossfading = false;
-            clearInterval(fade);
+            clearInterval(this.fadeInterval);
+            this.fadeInterval = null;
           } else {
             inPlayer.volume = vol;
             outPlayer.volume = 1 - vol;
@@ -1172,10 +1186,10 @@
       setTimeout(() => tip.remove(), 1200);
     }
 
-    function tocarMusica() {
+    function tocarMusica(force = false) {
       if (!playlist.length) return;
       const track = playlist[musicasTrocadas % playlist.length];
-      audio.play(track.url);
+      audio.play(track.url, force);
 
       // Update Music Panel
       const info = document.getElementById('music-info');
@@ -1201,7 +1215,7 @@
               url: t.audio
             }));
             musicasTrocadas = 0;
-            tocarMusica();
+            tocarMusica(true); // Force change on search
           } else {
             showDialogue("SPOTIFY", "Nenhuma track encontrada para essa busca.");
           }

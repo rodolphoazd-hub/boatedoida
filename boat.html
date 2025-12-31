@@ -426,12 +426,17 @@
         <div id="dinheiro" class="money-stat" style="font-size: 18px;">$0</div>
       </div>
 
-      <div class="glass-panel"
-        style="padding: 2px; border-left: 4px solid #1DB954; width: 300px; height: 80px; overflow: hidden;">
-        <iframe id="spotify-player"
-          src="https://open.spotify.com/embed/track/4PTG3YmOsbS9SFW7zbBTDS?utm_source=generator&theme=0" width="100%"
-          height="80" frameBorder="0" allowfullscreen=""
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      <div id="radio-panel" class="glass-panel"
+        style="padding: 5px 15px; border-left: 4px solid #1DB954; flex-grow: 1; max-width: 250px;">
+        <div style="font-size: 10px; color: #888; display: flex; align-items: center; gap: 5px;">
+          <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png"
+            style="height: 10px;">
+          PREMIUM: bem.browneria@gmail.com
+        </div>
+        <div id="music-info"
+          style="font-size: 11px; color: #1DB954; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700;">
+          SINTONIZANDO...
+        </div>
       </div>
     </div>
 
@@ -521,15 +526,16 @@
     }
 
     async function carregarProgresso() {
-      // Hardcoded fallbacks for resilience
-      // Static Spotify Playlist with REAL IDs
-      const fallbackPlaylist = [
-        { id: '4PTG3YmOsbS9SFW7zbBTDS', title: "Cyberpunk", artist: "Mick Gordon" },
-        { id: '6EpGBSU4gnvAEzY2G18FdD', title: "Heads Will Roll", artist: "A-Trak Remix" },
-        { id: '6S6p9c5c9Y6G2z0zY5Y5Y5', title: "Midnight City", artist: "M83" },
-        { id: '4u7EnebtmSj9vJBv39cy0r', title: "After Hours", artist: "The Weeknd" }
-      ];
-      playlist = fallbackPlaylist; // Assign fallback playlist immediately
+      // 1. Initial Identity & Stats
+      document.getElementById('radio-panel').innerHTML = `
+        <div style="font-size: 10px; color: #888; display: flex; align-items: center; gap: 5px;">
+          <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png" style="height: 10px;">
+          SPOTIFY PREM: bem.browneria@gmail.com
+        </div>
+        <div id="music-info" style="font-size: 11px; color: #1DB954; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700;">
+          SINCRONIZANDO...
+        </div>
+      `;
 
       try {
         const res = await fetch(`${API_URL}/progresso/${nomeJogador}`);
@@ -539,10 +545,26 @@
           chapter = data.chapter || 0;
           dinheiro = data.dinheiro || 100;
         }
-      } catch (e) { console.warn("Could not load progress from server"); }
+      } catch (e) { console.warn("Relatório de progresso local ativo"); }
 
-      // Use the static Spotify playlist directly
-      playlist = fallbackPlaylist;
+      // 2. Fetch Live Trending Global Hits (Spotify Style)
+      const searchUrl = `https://api.deezer.com/chart/0/tracks?output=jsonp&limit=20&callback=initSpotify`;
+      const script = document.createElement('script');
+      script.src = searchUrl;
+      window.initSpotify = (data) => {
+        if (data && data.data && data.data.length > 0) {
+          playlist = data.data.map(t => ({
+            id: t.id,
+            title: t.title,
+            artist: t.artist.name,
+            url: t.preview
+          }));
+          tocarMusica();
+        }
+        document.body.removeChild(script);
+        delete window.initSpotify;
+      };
+      document.body.appendChild(script);
     }
 
     async function salvarProgresso() {
@@ -555,46 +577,127 @@
       } catch (e) { }
     }
 
-    /* Spotify Controller - Direct Embed Integration */
-    class SpotifyController {
+    /* Audio Engine for Fluid Music */
+    class AudioEngine {
       constructor() {
-        this.iframe = document.getElementById('spotify-player');
+        this.players = [new Audio(), new Audio()];
+        this.currentPlayerIndex = 0;
+        this.isCrossfading = false;
+        this.fadeInterval = null;
+        this.fadeOutTime = 2000;
+        this.fadeInTime = 2000;
+
+        this.players.forEach((p, idx) => {
+          p.onerror = () => {
+            console.warn(`Audio Error: ${p.src}`);
+            showStatus("PULANDO TRACK...", true);
+            this.isCrossfading = false;
+            if (this.fadeInterval) clearInterval(this.fadeInterval);
+            setTimeout(() => {
+              musicasTrocadas++;
+              tocarMusica(true);
+            }, 500);
+          };
+        });
       }
 
-      play(trackId) {
-        // If trackId is a full URL from Jamendo, we use it as fallback 
-        // but the goal is to use Spotify Embed links
-        if (trackId.includes('jamendo.com')) {
-          console.log("Using Jamendo fallback in Spotify UI");
-          // We can't easily play raw MP3 in the Spotify Iframe, 
-          // so we'll just update the SRC if it's a Spotify ID
+      play(src, force = false) {
+        if (this.fadeInterval) {
+          clearInterval(this.fadeInterval);
+          this.fadeInterval = null;
         }
 
-        // trackId usually 4PTG3YmOsbS9SFW7zbBTDS
-        const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
-        this.iframe.src = embedUrl;
+        if (this.isCrossfading && !force) return;
+        if (this.isCrossfading && force) this.isCrossfading = false;
 
-        showStatus("SPOTIFY: SINCRONIZANDO...", true);
+        const current = this.players[this.currentPlayerIndex];
+        const nextPlayerIndex = 1 - this.currentPlayerIndex;
+        const next = this.players[nextPlayerIndex];
+
+        if (!current.src) {
+          current.src = src;
+          current.volume = 1;
+          current.play().catch(e => console.warn("Autoplay block"));
+          return;
+        }
+
+        this.isCrossfading = true;
+        next.src = src;
+        next.volume = 0;
+        next.play().catch(e => console.warn("Autoplay block"));
+
+        this.crossfade(current, next);
+        this.currentPlayerIndex = nextPlayerIndex;
+      }
+
+      crossfade(outPlayer, inPlayer) {
+        let vol = 0;
+        const interval = 50;
+        const step = interval / this.fadeInTime;
+
+        this.fadeInterval = setInterval(() => {
+          vol += step;
+          if (vol >= 1) {
+            inPlayer.volume = 1;
+            outPlayer.volume = 0;
+            outPlayer.pause();
+            this.isCrossfading = false;
+            clearInterval(this.fadeInterval);
+            this.fadeInterval = null;
+          } else {
+            inPlayer.volume = vol;
+            outPlayer.volume = 1 - vol;
+          }
+        }, interval);
       }
     }
 
-    const spotify = new SpotifyController();
+    const audio = new AudioEngine();
 
-    // Function to play music using SpotifyController/Embed
-    function tocarMusica() {
+    function tocarMusica(force = false) {
       if (playlist.length === 0) return;
 
       const track = playlist[musicasTrocadas % playlist.length];
-      spotify.play(track.id);
+      audio.play(track.url, force);
 
-      // Update dialogue-text if it exists to show track info
       const info = document.getElementById('music-info');
       if (info) info.innerText = `${track.title} - ${track.artist}`;
     }
 
+    /* Spotify-Style Search (Powered by Deezer/Jamendo) */
+    function showSpotifySearch() {
+      const query = prompt("O que você quer ouvir no seu Spotify?", "The Weeknd");
+      if (!query) return;
+
+      showStatus("CONECTANDO AO SPOTIFY...", true);
+
+      // Using Deezer through a more reliable JSONP-like approach or CORS proxy if possible
+      const searchUrl = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&output=jsonp&callback=spotifyCallback`;
+
+      const script = document.createElement('script');
+      script.src = searchUrl;
+      window.spotifyCallback = (data) => {
+        if (data && data.data && data.data.length > 0) {
+          playlist = data.data.map(t => ({
+            id: t.id,
+            title: t.title,
+            artist: t.artist.name,
+            url: t.preview
+          }));
+          musicasTrocadas = 0;
+          tocarMusica(true);
+          showStatus("PLAYLIST SPOTIFY ATUALIZADA!", true);
+        } else {
+          showDialogue("SISTEMA", "Nenhuma música encontrada. Tente outra busca!");
+        }
+        document.body.removeChild(script);
+        delete window.spotifyCallback;
+      };
+      document.body.appendChild(script);
+    }
+
     /* Dialogue System */
     function showDialogue(name, text, callback = null) {
-      const box = document.getElementById('dialogue-box');
       document.getElementById('dialogue-name').innerText = name;
       document.getElementById('dialogue-text').innerText = text;
 
@@ -1130,31 +1233,37 @@
 
 
     function showSpotifySearch() {
-      const query = prompt("O que você quer ouvir (Estilo Spotify)?", "Cyberpunk Techno");
+      const query = prompt("O que você quer ouvir (Versão Spotify)?", "Daft Punk");
       if (!query) return;
 
       showStatus("BUSCANDO NO SPOTIFY...", true);
-      // Fallback searching on Jamendo but formatted as Spotify
-      fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=709fa152&format=json&limit=5&search=${query}`)
+
+      // Use a CORS proxy if needed, but some Deezer endpoints are public
+      const searchUrl = `https://corsproxy.io/?${encodeURIComponent('https://api.deezer.com/search?q=' + query)}`;
+
+      fetch(searchUrl)
         .then(res => res.json())
         .then(data => {
-          if (data.results && data.results.length > 0) {
-            playlist = data.results.map(t => ({
+          if (data.data && data.data.length > 0) {
+            playlist = data.data.map(t => ({
               id: t.id,
-              title: t.name,
-              artist: t.artist_name,
-              url: t.audio
+              title: t.title,
+              artist: t.artist.name,
+              url: t.preview
             }));
             musicasTrocadas = 0;
-            tocarMusica(true); // Force change on search
+            tocarMusica(true);
             showStatus("SPOTIFY: PLAYLIST ATUALIZADA!", true);
           } else {
-            showDialogue("SPOTIFY", "Nenhuma track encontrada para essa busca. Tente termos como 'Electronic', 'Cyberpunk' ou 'Phonk'.");
+            showDialogue("SPOTIFY", "Nenhuma track encontrada. Tente termos genéricos como 'Phonk' ou 'Techno'.");
           }
         })
         .catch(err => {
-          console.error("Spotify Search Error:", err);
-          showDialogue("SISTEMA", "Erro ao conectar com a rede. Tente novamente em alguns segundos.");
+          console.error("Deezer Error:", err);
+          showDialogue("SISTEMA", "Erro na rede. Tentando modo de segurança...");
+          // Skip to next item in local playlist
+          musicasTrocadas++;
+          tocarMusica(true);
         });
     }
 

@@ -64,6 +64,16 @@
       will-change: left, top, transform;
     }
 
+    /* Boss Sheet specific */
+    .boss-character {
+      width: 250px !important;
+      height: 380px !important;
+      background-image: url('assets/boss_sheet.png') !important;
+      background-size: 1000px 380px !important;
+      /* Fixed size based on 4 frames of 250px */
+      background-repeat: no-repeat !important;
+    }
+
     /* Pixel Art Animations (Step-based for retro feel) */
     @keyframes pixel-walk {
       0% {
@@ -563,12 +573,8 @@
 
         // Special handling for unique characters
         if (role === 'BOSS') {
-          this.element.style.backgroundImage = "url('assets/boss.png')";
-          this.element.style.backgroundSize = "contain";
-          this.element.style.backgroundRepeat = "no-repeat";
-          this.element.style.backgroundPosition = "center bottom";
-          this.element.style.width = "200px";
-          this.element.style.height = "300px";
+          this.element.classList.add('boss-character');
+          this.setPose(0); // Default idle
         } else {
           // Sheet mapping for characters_green.png (4 columns)
           const row = Math.floor(index / 4);
@@ -579,110 +585,130 @@
         document.getElementById('world').appendChild(this.element);
         this.updatePos();
         if (role === 'GUEST') this.scheduleNextAction();
+        if (role === 'BOSS') this.startBossBehavior();
       }
 
-      updatePos() {
-        // Adjust offset if BOSS
-        const offsetX = this.role === 'BOSS' ? 100 : 75;
-        const offsetY = this.role === 'BOSS' ? 250 : 120;
-        this.element.style.left = `calc(${this.x}% - ${offsetX}px)`;
-        this.element.style.top = `calc(${this.y}% - ${offsetY}px)`;
-        this.element.style.zIndex = Math.floor(this.y * 10);
+      setPose(index) {
+        if (this.role !== 'BOSS') return;
+        this.element.style.backgroundPosition = `-${index * 250}px 0px`;
       }
 
-      handleInteraction() {
-        if (this.role === 'ALEX') {
-          if (chapter === 0) {
-            showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
-              tutorialComplete = true;
-            });
-          } else if (chapter === 1) {
-            showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.");
-          } else if (chapter === 2) {
-            showDialogue("Alex", "O clima está estranho hoje... O Rafael parecia preocupado com algo na entrada.");
-          } else if (chapter >= 3) {
-            showDialogue("Alex", "Foque na Sofia! Ela quer roubar seu lugar no DJ Booth.");
+      startBossBehavior() {
+        setInterval(() => {
+          if (Math.random() > 0.7) {
+            const poses = [0, 2, 3]; // Stand, Dance, Call (Point is for interaction)
+            this.setPose(poses[Math.floor(Math.random() * poses.length)]);
           }
-        } else if (this.role === 'BOSS') {
-          if (chapter === 4) {
-            showDialogue("Vincent (O Dono)", "O Alex está acabado. Tenho uma proposta: esqueça aqueles documentos e você será meu parceiro número 1.", () => {
-              showStatus("ESCOLHA SEU DESTINO", true);
-              confirmarEscolhaFinal();
-            });
-          } else {
-            showDialogue("Vincent (O Dono)", "Nada mal para um novato. Mas para ser o Rei da Noite, você precisará de mais do que apenas música. Mostre-me que você sabe gastar na minha loja.");
-          }
-        } else if (this.role === 'LIA') {
-          showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
-        } else if (this.role === 'SOFIA') {
-          if (chapter === 3) {
-            showDialogue("Sofia (DJ Rival)", "Então você é o queridinho do Alex? Vamos ver se aguenta um set de verdade. Me mostre o que você tem até chegarmos a 1000 de FAMA!", () => {
-              showStatus("DJ BATTLE INICIADA!", true);
-            });
-          } else {
-            showDialogue("Sofia", "Ainda temos o que conversar sobre aquele contrato...");
-          }
-        } else if (this.role === 'SECURITY') {
-          if (chapter === 2) {
-            showDialogue("Rafael (Segurança)", "Ei, DJ! Escuta... Alguém andou mexendo no sistema de câmeras do escritório do Alex. Você devia dar uma olhada lá atrás do bar.", () => {
-              const trigger = document.getElementById('office-trigger');
-              if (trigger) trigger.style.display = 'block';
-            });
-          } else {
-            showDialogue("Rafael", "Tudo sob controle por aqui. Continue o show!");
-          }
-        } else if (this.role === 'INVESTIGATION') {
-          showDialogue("Sistema", "Você encontrou documentos sobre uma dívida secreta da boate... Alguém está tentando sabotar o Alex!", () => {
-            this.element.style.display = 'none';
-            completarMissao();
+        }, 4000);
+      }
+    }
+
+    updatePos() {
+      // Adjust offset if BOSS
+      const offsetX = this.role === 'BOSS' ? 125 : 75;
+      const offsetY = this.role === 'BOSS' ? 350 : 120;
+      this.element.style.left = `calc(${this.x}% - ${offsetX}px)`;
+      this.element.style.top = `calc(${this.y}% - ${offsetY}px)`;
+      this.element.style.zIndex = Math.floor(this.y * 10);
+    }
+
+    handleInteraction() {
+      if (this.role === 'ALEX') {
+        if (chapter === 0) {
+          showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
+            tutorialComplete = true;
           });
-        } else if (this.role === 'DJ') {
-          interagirDJ();
-        } else {
-          showTip(this.element);
-          addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
-          addMoney(this.role === 'GUEST' ? 2 : 10);
-          showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
-          this.interacted = true;
-          checkMissions();
+        } else if (chapter === 1) {
+          showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.");
+        } else if (chapter === 2) {
+          showDialogue("Alex", "O clima está estranho hoje... O Rafael parecia preocupado com algo na entrada.");
+        } else if (chapter >= 3) {
+          showDialogue("Alex", "Foque na Sofia! Ela quer roubar seu lugar no DJ Booth.");
         }
+      } else if (this.role === 'BOSS') {
+        this.setPose(1); // POINT pose on interaction
+        if (chapter === 4) {
+          showDialogue("Vincent (O Dono)", "O Alex está acabado. Tenho uma proposta: esqueça aqueles documentos e você será meu parceiro número 1.", () => {
+            showStatus("ESCOLHA SEU DESTINO", true);
+            confirmarEscolhaFinal();
+            this.setPose(0);
+          });
+        } else {
+          showDialogue("Vincent (O Dono)", "Nada mal para um novato. Mas para ser o Rei da Noite, você precisará de mais do que apenas música. Mostre-me que você sabe gastar na minha loja.", () => {
+            this.setPose(0);
+          });
+        }
+      } else if (this.role === 'LIA') {
+        showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
+      } else if (this.role === 'SOFIA') {
+        if (chapter === 3) {
+          showDialogue("Sofia (DJ Rival)", "Então você é o queridinho do Alex? Vamos ver se aguenta um set de verdade. Me mostre o que você tem até chegarmos a 1000 de FAMA!", () => {
+            showStatus("DJ BATTLE INICIADA!", true);
+          });
+        } else {
+          showDialogue("Sofia", "Ainda temos o que conversar sobre aquele contrato...");
+        }
+      } else if (this.role === 'SECURITY') {
+        if (chapter === 2) {
+          showDialogue("Rafael (Segurança)", "Ei, DJ! Escuta... Alguém andou mexendo no sistema de câmeras do escritório do Alex. Você devia dar uma olhada lá atrás do bar.", () => {
+            const trigger = document.getElementById('office-trigger');
+            if (trigger) trigger.style.display = 'block';
+          });
+        } else {
+          showDialogue("Rafael", "Tudo sob controle por aqui. Continue o show!");
+        }
+      } else if (this.role === 'INVESTIGATION') {
+        showDialogue("Sistema", "Você encontrou documentos sobre uma dívida secreta da boate... Alguém está tentando sabotar o Alex!", () => {
+          this.element.style.display = 'none';
+          completarMissao();
+        });
+      } else if (this.role === 'DJ') {
+        interagirDJ();
+      } else {
+        showTip(this.element);
+        addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
+        addMoney(this.role === 'GUEST' ? 2 : 10);
+        showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
+        this.interacted = true;
+        checkMissions();
       }
+    }
 
-      scheduleNextAction() {
-        const delay = 3000 + Math.random() * 5000;
+    scheduleNextAction() {
+      const delay = 3000 + Math.random() * 5000;
+      setTimeout(() => {
+        this.decideNextState();
+        this.scheduleNextAction();
+      }, delay);
+    }
+
+    decideNextState() {
+      if (this.role !== 'GUEST') return;
+      const rand = Math.random();
+      if (rand < 0.45) {
+        const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
+        const targetX = spot.x + (Math.random() * 8 - 4);
+        const targetY = spot.y + (Math.random() * 8 - 4);
+        const dx = targetX - this.x;
+        this.element.classList.remove('dancing');
+        this.element.classList.add('walking');
+        this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+        this.x = targetX;
+        this.y = targetY;
+        this.updatePos();
         setTimeout(() => {
-          this.decideNextState();
-          this.scheduleNextAction();
-        }, delay);
-      }
-
-      decideNextState() {
-        if (this.role !== 'GUEST') return;
-        const rand = Math.random();
-        if (rand < 0.45) {
-          const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
-          const targetX = spot.x + (Math.random() * 8 - 4);
-          const targetY = spot.y + (Math.random() * 8 - 4);
-          const dx = targetX - this.x;
-          this.element.classList.remove('dancing');
-          this.element.classList.add('walking');
-          this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
-          this.x = targetX;
-          this.y = targetY;
-          this.updatePos();
-          setTimeout(() => {
-            this.element.classList.remove('walking');
-            this.element.classList.add('dancing');
-          }, 3000);
-        } else if (rand < 0.85) {
           this.element.classList.remove('walking');
           this.element.classList.add('dancing');
-        } else {
-          this.element.classList.remove('walking', 'dancing');
-        }
+        }, 3000);
+      } else if (rand < 0.85) {
+        this.element.classList.remove('walking');
+        this.element.classList.add('dancing');
+      } else {
+        this.element.classList.remove('walking', 'dancing');
       }
+    }
 
-      move() { }
+    move() { }
     }
 
     let tutorialComplete = false;

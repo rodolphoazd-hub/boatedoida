@@ -6,9 +6,12 @@
   <title>Boate Simulator - Premium Edition</title>
   <style>
     :root {
-      --primary-neon: #00f2ff;
-      --secondary-neon: #ff00ea;
-      --accent-neon: #bc00ff;
+      --primary-neon: #1DB954;
+      /* Spotify Green */
+      --secondary-neon: #191414;
+      /* Spotify Black */
+      --accent-neon: #ffffff;
+      --bg-dark: #000000;
     }
 
     body,
@@ -423,10 +426,14 @@
         <div id="dinheiro" class="money-stat" style="font-size: 18px;">$0</div>
       </div>
 
-      <div class="glass-panel" style="padding: 5px 15px; flex-grow: 1; max-width: 200px; text-align: left;">
-        <div style="font-size: 10px; color: #888;">NOW PLAYING</div>
+      <div class="glass-panel" style="padding: 5px 15px; border-left: 4px solid #1DB954;">
+        <div style="font-size: 10px; color: #888; display: flex; align-items: center; gap: 5px;">
+          <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png"
+            style="height: 10px;">
+          NOW PLAYING
+        </div>
         <div id="music-info"
-          style="font-size: 12px; color: var(--primary-neon); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          style="font-size: 12px; color: #1DB954; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700;">
           ...</div>
       </div>
     </div>
@@ -440,11 +447,10 @@
     </div>
 
     <div id="bottom-bar">
-      <div class="ui-button">🏠</div>
-      <div class="ui-button">🎁</div>
-      <div class="ui-button">👗</div>
-      <div class="ui-button" onclick="musicasTrocadas++; interagirDJ()">🎵</div>
+      <div class="ui-button" onclick="showSpotifySearch()">🔍</div>
       <div class="ui-button" onclick="toggleShop()">🛒</div>
+      <div class="ui-button" onclick="musicasTrocadas++; interagirDJ()">🎵</div>
+      <div class="ui-button" onclick="showSpotifySetup()">⚙️</div>
     </div>
 
     <!-- Shop Overlay -->
@@ -1176,6 +1182,34 @@
       info.innerText = `${track.title} - ${track.artist || 'Unknown'}`;
 
       if (track.title) showStatus(`TRACK: ${track.title}`, true);
+    }
+
+    function showSpotifySearch() {
+      const query = prompt("O que você quer ouvir (Estilo Spotify)?", "Cyberpunk Techno");
+      if (!query) return;
+
+      showStatus("BUSCANDO NO SPOTIFY...", true);
+      // Fallback searching on Jamendo but formatted as Spotify
+      fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=json&limit=5&search=${query}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.results.length > 0) {
+            playlist = data.results.map(t => ({
+              id: t.id,
+              title: t.name,
+              artist: t.artist_name,
+              url: t.audio
+            }));
+            musicasTrocadas = 0;
+            tocarMusica();
+          } else {
+            showDialogue("SPOTIFY", "Nenhuma track encontrada para essa busca.");
+          }
+        });
+    }
+
+    function showSpotifySetup() {
+      showDialogue("SPOTIFY SETUP", "Para acessar o Spotify REAL, você precisará de uma Client ID. Por enquanto, estamos usando uma integração simulada que busca tracks de alta fidelidade sem necessidade de login.");
     }
 
     function finalizarJogo() {

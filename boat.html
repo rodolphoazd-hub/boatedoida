@@ -578,15 +578,27 @@
       constructor() {
         this.players = [new Audio(), new Audio()];
         this.currentPlayerIndex = 0;
+        this.isCrossfading = false;
         this.fadeOutTime = 2000;
         this.fadeInTime = 2000;
       }
 
       play(src) {
-        const nextPlayerIndex = 1 - this.currentPlayerIndex;
+        if (this.isCrossfading) return;
+
         const current = this.players[this.currentPlayerIndex];
+        const nextPlayerIndex = 1 - this.currentPlayerIndex;
         const next = this.players[nextPlayerIndex];
 
+        // If it's the first time playing or no src is set on current
+        if (!current.src) {
+          current.src = src;
+          current.volume = 1;
+          current.play();
+          return;
+        }
+
+        this.isCrossfading = true;
         next.src = src;
         next.volume = 0;
         next.play();
@@ -606,6 +618,7 @@
             inPlayer.volume = 1;
             outPlayer.volume = 0;
             outPlayer.pause();
+            this.isCrossfading = false;
             clearInterval(fade);
           } else {
             inPlayer.volume = vol;

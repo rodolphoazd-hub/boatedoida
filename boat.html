@@ -149,29 +149,79 @@
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
     }
 
-    #info-panel {
-      left: 20px;
-      border: 1px solid var(--primary-neon);
+    /* Nightclub City Glass UI Components */
+    .glass-panel {
+      background: rgba(0, 150, 255, 0.15);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 242, 255, 0.3);
+      border-radius: 0;
+      box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.1);
     }
 
-    #mission-panel {
-      right: 20px;
-      border: 1px solid var(--secondary-neon);
-    }
-
-    #status-msg {
+    #top-bar {
       position: absolute;
-      bottom: 25%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      box-sizing: border-box;
+      z-index: 1000;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+    }
+
+    #bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      padding-bottom: 10px;
+      z-index: 1000;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    }
+
+    .ui-button {
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 100, 255, 0.2);
+      border: 1px solid var(--primary-neon);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .ui-button:hover {
+      background: rgba(0, 242, 255, 0.4);
+      transform: translateY(-5px);
+    }
+
+    /* Role Badges */
+    .role-label {
+      position: absolute;
+      top: -25px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 32px;
-      font-weight: 800;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 900;
       text-transform: uppercase;
+      white-space: nowrap;
       color: var(--primary-neon);
-      text-shadow: 0 0 20px var(--primary-neon);
+      border: 1px solid var(--primary-neon);
       pointer-events: none;
-      opacity: 0;
-      z-index: 200;
     }
 
     #inicio,
@@ -255,23 +305,37 @@
   </div>
 
   <div id="club">
-    <div id="info-panel">
-      <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Promoter</div>
-      <div id="jogador" style="font-size: 22px; font-weight: 900; color: var(--primary-neon)">---</div>
-      <div style="margin-top: 12px; font-weight: bold;">FAMA: <span id="fama" style="color: #00ff00">0</span></div>
-    </div>
+    <div id="top-bar">
+      <div id="info-panel" class="glass-panel" style="position: static; padding: 5px 15px;">
+        <div style="font-size: 10px; color: #888; text-transform: uppercase;">Promoter</div>
+        <div id="jogador" style="font-size: 16px; font-weight: 900; color: var(--primary-neon)">---</div>
+      </div>
 
-    <div id="mission-panel">
-      <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Current Goal</div>
-      <div id="missao" style="font-size: 18px; color: var(--secondary-neon); font-weight: bold;">Initializing...</div>
+      <div id="mission-panel" class="glass-panel" style="position: static; padding: 5px 15px;">
+        <div style="font-size: 10px; color: #888; text-transform: uppercase;">Mission</div>
+        <div id="missao" style="font-size: 14px; color: var(--secondary-neon); font-weight: bold;">Initialing...</div>
+      </div>
+
+      <div class="glass-panel" style="padding: 5px 15px;">
+        <div style="font-size: 10px; color: #888;">FAME</div>
+        <div id="fama" style="font-size: 18px; color: #00ff00; font-weight: 900;">0</div>
+      </div>
     </div>
 
     <div id="status-msg">BOA!</div>
 
-    <div id="dj-booth" onclick="interagirDJ()">DJ BOOTH</div>
+    <div id="dj-booth" style="opacity: 0.5;">DJ BOOTH</div>
 
     <div id="world">
       <!-- Characters will be injected here -->
+    </div>
+
+    <div id="bottom-bar">
+      <div class="ui-button">🏠</div>
+      <div class="ui-button">🎁</div>
+      <div class="ui-button">👗</div>
+      <div class="ui-button">🎵</div>
+      <div class="ui-button">🛒</div>
     </div>
   </div>
 
@@ -347,22 +411,33 @@
     }
 
     class GameCharacter {
-      constructor(index, startPos) {
+      constructor(index, startPos, role = 'GUEST') {
         this.element = document.createElement('div');
         this.element.className = 'character pixel-art dancing';
         this.x = startPos.x;
         this.y = startPos.y;
+        this.role = role;
         this.interacted = false;
 
-        // Sheet mapping (assume 4x2 layout)
+        if (role !== 'GUEST') {
+          const badge = document.createElement('div');
+          badge.className = 'role-label';
+          badge.innerText = role;
+          this.element.appendChild(badge);
+          if (role === 'DJ') this.element.onclick = () => interagirDJ();
+          else this.element.onclick = () => this.interact();
+        } else {
+          this.element.onclick = () => this.interact();
+        }
+
+        // Sheet mapping
         const row = Math.floor(index / 4);
         const col = index % 4;
         this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
-        this.element.onclick = () => this.interact();
 
         document.getElementById('world').appendChild(this.element);
         this.updatePos();
-        this.scheduleNextAction();
+        if (role === 'GUEST') this.scheduleNextAction();
       }
 
       updatePos() {
@@ -380,16 +455,15 @@
       }
 
       decideNextState() {
+        if (this.role !== 'GUEST') return;
         const rand = Math.random();
 
         if (rand < 0.45) {
-          // WALK MOVE
           const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
           const targetX = spot.x + (Math.random() * 8 - 4);
           const targetY = spot.y + (Math.random() * 8 - 4);
 
           const dx = targetX - this.x;
-          // Apply walking style and direction
           this.element.classList.remove('dancing');
           this.element.classList.add('walking');
           this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
@@ -398,7 +472,6 @@
           this.y = targetY;
           this.updatePos();
 
-          // Switch back to dancing when arrival (approx 4s)
           setTimeout(() => {
             this.element.classList.remove('walking');
             this.element.classList.add('dancing');
@@ -417,8 +490,8 @@
 
       interact() {
         showTip(this.element);
-        addFama(5);
-        showStatus("ISSO AÍ!");
+        addFama(this.role === 'GUEST' ? 5 : 15);
+        showStatus(this.role === 'GUEST' ? "ISSO AÍ!" : `HELLO ${this.role}!`);
 
         if (missaoAtual === 0) {
           this.interacted = true;
@@ -432,12 +505,22 @@
     }
 
     function spawnCharacters() {
-      for (let i = 0; i < 20; i++) {
+      // 1. Spawn DJ
+      characters.push(new GameCharacter(4, { x: 50, y: 30 }, 'DJ'));
+
+      // 2. Spawn Barman
+      characters.push(new GameCharacter(5, { x: 25, y: 50 }, 'BARMAN'));
+
+      // 3. Spawn Security
+      characters.push(new GameCharacter(1, { x: 85, y: 80 }, 'SECURITY'));
+
+      // 4. Spawn Guests
+      for (let i = 0; i < 15; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
         characters.push(new GameCharacter(i % 16, {
           x: spot.x + (Math.random() * 15 - 7.5),
           y: spot.y + (Math.random() * 15 - 7.5)
-        }));
+        }, 'GUEST'));
       }
     }
 

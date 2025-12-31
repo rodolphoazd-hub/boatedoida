@@ -514,12 +514,20 @@
       // 3. Spawn Security
       characters.push(new GameCharacter(1, { x: 85, y: 80 }, 'SECURITY'));
 
-      // 4. Spawn Guests
-      for (let i = 0; i < 15; i++) {
+      // 4. Spawn Photographer
+      characters.push(new GameCharacter(12, { x: 40, y: 60 }, 'PHOTOGRAPHER'));
+
+      // 5. Spawn VIPs
+      for (let i = 0; i < 3; i++) {
+        characters.push(new GameCharacter(10, { x: 75 + i * 5, y: 50 }, 'VIP'));
+      }
+
+      // 6. Spawn Guests
+      for (let i = 0; i < 35; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
         characters.push(new GameCharacter(i % 16, {
-          x: spot.x + (Math.random() * 15 - 7.5),
-          y: spot.y + (Math.random() * 15 - 7.5)
+          x: spot.x + (Math.random() * 18 - 9),
+          y: spot.y + (Math.random() * 18 - 9)
         }, 'GUEST'));
       }
     }

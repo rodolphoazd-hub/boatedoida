@@ -43,67 +43,68 @@
       pointer-events: none;
     }
 
-    /* Realistic 2D NPC Filter */
-    .npc-2d {
-      filter: drop-shadow(0 15px 10px rgba(0, 0, 0, 0.5));
-      image-rendering: auto;
+    /* High-Fidelity Pixel NPC Style */
+    .pixel-art {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: url(#remove-green);
     }
 
     .character {
       position: absolute;
       width: 150px;
       height: 150px;
-      background-image: url('assets/character_red.png');
-      background-size: 1500px 300px;
-      /* Adjusting for sprite sheet layout */
+      background-image: url('assets/characters_green.png');
+      background-size: 600px 600px;
+      /* 4x4 or 4x2 grid */
       cursor: pointer;
       z-index: 10;
-      transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: left 3s linear, top 3s linear;
       transform-origin: bottom center;
       will-change: left, top, transform;
     }
 
-    /* Realistic 2D Walking Animation (Secondary Motion) */
-    @keyframes realistic-walk {
+    /* Pixel Art Animations (Step-based for retro feel) */
+    @keyframes pixel-walk {
       0% {
-        transform: translateY(0) rotate(0deg) scale(1);
+        transform: translateY(0) rotate(0deg);
       }
 
       25% {
-        transform: translateY(-5px) rotate(2deg) scale(1.02);
+        transform: translateY(-10px) rotate(5deg);
       }
 
       50% {
-        transform: translateY(0) rotate(0deg) scale(1);
+        transform: translateY(0) rotate(0deg);
       }
 
       75% {
-        transform: translateY(-5px) rotate(-2deg) scale(1.02);
+        transform: translateY(-10px) rotate(-5deg);
       }
 
       100% {
-        transform: translateY(0) rotate(0deg) scale(1);
+        transform: translateY(0) rotate(0deg);
       }
     }
 
     .walking {
-      animation: realistic-walk 1.2s infinite ease-in-out;
+      animation: pixel-walk 0.6s infinite steps(4);
     }
 
-    @keyframes realistic-dance {
+    @keyframes pixel-bounce {
 
       0%,
       100% {
-        transform: scale(1) translateY(0);
+        transform: scaleY(1);
       }
 
       50% {
-        transform: scale(1.03) translateY(-8px);
+        transform: scaleY(0.9) translateY(2px);
       }
     }
 
     .dancing {
-      animation: realistic-dance 0.8s infinite ease-in-out;
+      animation: pixel-bounce 0.4s infinite steps(2);
     }
 
     /* Pixel Grid Overlay */
@@ -226,14 +227,15 @@
 
     #inicio,
     #fim {
-      position: absolute;
+      position: fixed;
       inset: 0;
-      background: radial-gradient(circle, #200044 0%, #050505 100%);
+      z-index: 5000;
+      background: radial-gradient(circle at center, #1a1a2e, #0f0f1a);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 1000;
+      text-align: center;
     }
 
     .btn {
@@ -253,6 +255,37 @@
     .btn:hover {
       transform: scale(1.05) translateY(-3px);
       box-shadow: 0 10px 40px rgba(188, 0, 255, 0.7);
+    }
+
+    /* Dialogue Box */
+    #dialogue-box {
+      display: none;
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 700px;
+      padding: 25px;
+      z-index: 2000;
+      cursor: pointer;
+      border-left: 5px solid var(--primary-neon);
+    }
+
+    #dialogue-name {
+      color: var(--primary-neon);
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+
+    #dialogue-text {
+      color: #fff;
+      font-size: 20px;
+      line-height: 1.5;
+      font-family: 'Courier New', Courier, monospace;
     }
 
     .mega-tip {
@@ -410,13 +443,70 @@
       } catch (e) { }
     }
 
+    /* Audio Engine for Fluid Music */
+    class AudioEngine {
+      constructor() {
+        this.players = [new Audio(), new Audio()];
+        this.currentPlayerIndex = 0;
+        this.fadeOutTime = 2000;
+        this.fadeInTime = 2000;
+      }
+
+      play(src) {
+        const nextPlayerIndex = 1 - this.currentPlayerIndex;
+        const current = this.players[this.currentPlayerIndex];
+        const next = this.players[nextPlayerIndex];
+
+        next.src = src;
+        next.volume = 0;
+        next.play();
+
+        this.crossfade(current, next);
+        this.currentPlayerIndex = nextPlayerIndex;
+      }
+
+      crossfade(outPlayer, inPlayer) {
+        let vol = 0;
+        const interval = 50;
+        const step = interval / this.fadeInTime;
+
+        const fade = setInterval(() => {
+          vol += step;
+          if (vol >= 1) {
+            inPlayer.volume = 1;
+            outPlayer.volume = 0;
+            outPlayer.pause();
+            clearInterval(fade);
+          } else {
+            inPlayer.volume = vol;
+            outPlayer.volume = 1 - vol;
+          }
+        }, interval);
+      }
+    }
+
+    const audio = new AudioEngine();
+
+    /* Dialogue System */
+    function showDialogue(name, text, callback = null) {
+      const box = document.getElementById('dialogue-box');
+      document.getElementById('dialogue-name').innerText = name;
+      document.getElementById('dialogue-text').innerText = text;
+      box.style.display = 'block';
+      box.onclick = () => {
+        box.style.display = 'none';
+        if (callback) callback();
+      };
+    }
+
     class GameCharacter {
-      constructor(index, startPos, role = 'GUEST') {
+      constructor(index, startPos, role = 'GUEST', name = '') {
         this.element = document.createElement('div');
-        this.element.className = 'character npc-2d dancing';
+        this.element.className = 'character pixel-art dancing';
         this.x = startPos.x;
         this.y = startPos.y;
         this.role = role;
+        this.name = name || role;
         this.interacted = false;
 
         if (role !== 'GUEST') {
@@ -424,14 +514,14 @@
           badge.className = 'role-label';
           badge.innerText = role;
           this.element.appendChild(badge);
-          if (role === 'DJ') this.element.onclick = () => interagirDJ();
-          else this.element.onclick = () => this.interact();
-        } else {
-          this.element.onclick = () => this.interact();
         }
 
-        // Horizontal Sheet Mapping for character_red.png (10 sprites)
-        this.element.style.backgroundPosition = `-${index * 150}px 0px`;
+        this.element.onclick = () => this.handleInteraction();
+
+        // Sheet mapping for characters_green.png (4 columns)
+        const row = Math.floor(index / 4);
+        const col = index % 4;
+        this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
 
         document.getElementById('world').appendChild(this.element);
         this.updatePos();
@@ -442,6 +532,22 @@
         this.element.style.left = `calc(${this.x}% - 75px)`;
         this.element.style.top = `calc(${this.y}% - 120px)`;
         this.element.style.zIndex = Math.floor(this.y * 10);
+      }
+
+      handleInteraction() {
+        if (this.role === 'ALEX' && chapter === 0) {
+          showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
+            tutorialComplete = true;
+          });
+        } else if (this.role === 'DJ') {
+          interagirDJ();
+        } else {
+          showTip(this.element);
+          addFama(this.role === 'GUEST' ? 5 : 15);
+          showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
+          this.interacted = true;
+          checkMissions();
+        }
       }
 
       scheduleNextAction() {
@@ -455,26 +561,21 @@
       decideNextState() {
         if (this.role !== 'GUEST') return;
         const rand = Math.random();
-
         if (rand < 0.45) {
           const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
           const targetX = spot.x + (Math.random() * 8 - 4);
           const targetY = spot.y + (Math.random() * 8 - 4);
-
           const dx = targetX - this.x;
           this.element.classList.remove('dancing');
           this.element.classList.add('walking');
           this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
-
           this.x = targetX;
           this.y = targetY;
           this.updatePos();
-
           setTimeout(() => {
             this.element.classList.remove('walking');
             this.element.classList.add('dancing');
-          }, 3500); // Decoupled from CSS for better control
-
+          }, 3000);
         } else if (rand < 0.85) {
           this.element.classList.remove('walking');
           this.element.classList.add('dancing');
@@ -484,34 +585,35 @@
       }
 
       move() { }
-
-      interact() {
-        showTip(this.element);
-        addFama(this.role === 'GUEST' ? 5 : 15);
-        showStatus(this.role === 'GUEST' ? "SHOW!" : `DÁ-LHE ${this.role}!`);
-
-        if (missaoAtual === 0) {
-          this.interacted = true;
-          const interactedCount = characters.filter(c => c.interacted).length;
-          if (interactedCount >= 3) completarMissao();
-        }
-      }
     }
 
+    let chapter = 0;
+    let tutorialComplete = false;
+    const chapters = [
+      "Tutorial: Conheça Alex",
+      "Cap 1: Conquistando a Boate",
+      "Cap 2: Segredos da Noite",
+      "Cap 3: Festa e Conquista",
+      "Cap 4: O Grande Confronto"
+    ];
+
     function spawnCharacters() {
-      // 1. Spawn DJ (using a cool sprite from character_red)
+      // 1. Alex (Gerente)
+      characters.push(new GameCharacter(4, { x: 15, y: 70 }, 'ALEX'));
+
+      // 2. DJ
       characters.push(new GameCharacter(0, { x: 50, y: 30 }, 'DJ'));
 
-      // 2. Spawn Barman
-      characters.push(new GameCharacter(2, { x: 25, y: 50 }, 'BARMAN'));
+      // 3. Rafael (Segurança)
+      characters.push(new GameCharacter(1, { x: 80, y: 80 }, 'SECURITY', 'RAFAEL'));
 
-      // 3. Spawn Security
-      characters.push(new GameCharacter(1, { x: 80, y: 80 }, 'SECURITY'));
+      // 4. Barman
+      characters.push(new GameCharacter(5, { x: 25, y: 50 }, 'BARMAN'));
 
-      // 4. Spawn Guests (randomized variety from the 10 sprites)
-      for (let i = 0; i < 40; i++) {
+      // 5.Guests
+      for (let i = 0; i < 30; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
-        characters.push(new GameCharacter(Math.floor(Math.random() * 10), {
+        characters.push(new GameCharacter(i % 16, {
           x: spot.x + (Math.random() * 20 - 10),
           y: spot.y + (Math.random() * 20 - 10)
         }, 'GUEST'));
@@ -526,12 +628,9 @@
     function interagirDJ() {
       musicasTrocadas++;
       addFama(10);
-      showStatus("DROP THE BASS!");
+      showStatus("NOVA TRACK!");
       tocarMusica();
-
-      if (missaoAtual === 1 && musicasTrocadas >= 3) {
-        completarMissao();
-      }
+      checkMissions();
     }
 
     function addFama(val) {
@@ -548,6 +647,13 @@
 
       if (missaoAtual >= missoes.length - 1) {
         setTimeout(finalizarJogo, 3000);
+      }
+    }
+
+    function checkMissions() {
+      const interactedCount = characters.filter(c => c.interacted).length;
+      if (chapter === 0 && tutorialComplete && musicasTrocadas > 0 && interactedCount >= 3) {
+        completarMissao();
       }
     }
 

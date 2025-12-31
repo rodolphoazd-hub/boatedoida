@@ -548,7 +548,7 @@
       } catch (e) { console.warn("Relatório de progresso local ativo"); }
 
       // 2. Fetch Live Trending Global Hits (Spotify Style)
-      const searchUrl = `https://api.deezer.com/chart/0/tracks?output=jsonp&limit=20&callback=initSpotify`;
+      const searchUrl = `https://api.deezer.com/chart/0/tracks?output=jsonp&limit=50&callback=initSpotify`;
       const script = document.createElement('script');
       script.src = searchUrl;
       window.initSpotify = (data) => {
@@ -588,6 +588,25 @@
         this.fadeInTime = 2000;
 
         this.players.forEach((p, idx) => {
+          // Monitor playback time to trigger next track before current ends
+          p.ontimeupdate = () => {
+            // For 30-second previews, start next track at 27 seconds
+            if (p.currentTime >= 27 && p.duration > 0 && p.duration <= 31 && !this.isCrossfading) {
+              console.log(`Player ${idx} approaching end at ${p.currentTime}s, advancing...`);
+              musicasTrocadas++;
+              tocarMusica();
+            }
+          };
+
+          p.onended = () => {
+            console.log(`Track ended on Player ${idx}`);
+            // Only advance if we're not already crossfading (which means next track is already playing)
+            if (!this.isCrossfading) {
+              musicasTrocadas++;
+              tocarMusica();
+            }
+          };
+
           p.onerror = () => {
             console.warn(`Audio Error: ${p.src}`);
             showStatus("PULANDO TRACK...", true);
@@ -656,6 +675,13 @@
 
     function tocarMusica(force = false) {
       if (playlist.length === 0) return;
+
+      // If we've reached the end of the current session playlist, refresh it to get fresh URLs
+      if ((musicasTrocadas % playlist.length) === 0 && musicasTrocadas > 0 && !force) {
+        console.log("Playlist end reached, refreshing hits...");
+        carregarProgresso(); // This will fetch new hits and restart the cycle
+        return;
+      }
 
       const track = playlist[musicasTrocadas % playlist.length];
       audio.play(track.url, force);

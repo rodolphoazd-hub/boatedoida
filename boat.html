@@ -560,10 +560,20 @@
 
         this.element.onclick = () => this.handleInteraction();
 
-        // Sheet mapping for characters_green.png (4 columns)
-        const row = Math.floor(index / 4);
-        const col = index % 4;
-        this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
+        // Special handling for unique characters
+        if (role === 'BOSS') {
+          this.element.style.backgroundImage = "url('assets/boss.png')";
+          this.element.style.backgroundSize = "contain";
+          this.element.style.backgroundRepeat = "no-repeat";
+          this.element.style.backgroundPosition = "center bottom";
+          this.element.style.width = "200px";
+          this.element.style.height = "300px";
+        } else {
+          // Sheet mapping for characters_green.png (4 columns)
+          const row = Math.floor(index / 4);
+          const col = index % 4;
+          this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
+        }
 
         document.getElementById('world').appendChild(this.element);
         this.updatePos();
@@ -571,8 +581,11 @@
       }
 
       updatePos() {
-        this.element.style.left = `calc(${this.x}% - 75px)`;
-        this.element.style.top = `calc(${this.y}% - 120px)`;
+        // Adjust offset if BOSS
+        const offsetX = this.role === 'BOSS' ? 100 : 75;
+        const offsetY = this.role === 'BOSS' ? 250 : 120;
+        this.element.style.left = `calc(${this.x}% - ${offsetX}px)`;
+        this.element.style.top = `calc(${this.y}% - ${offsetY}px)`;
         this.element.style.zIndex = Math.floor(this.y * 10);
       }
 
@@ -584,7 +597,11 @@
             });
           } else if (chapter === 1) {
             showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.");
+          } else if (chapter >= 2) {
+            showDialogue("Alex", "O Vincent está te esperando no mezanino VIP. Tente impressioná-lo!");
           }
+        } else if (this.role === 'BOSS') {
+          showDialogue("Vincent (O Dono)", "Nada mal para um novato. Mas para ser o Rei da Noite, você precisará de mais do que apenas música. Mostre-me que você sabe gastar na minha loja.");
         } else if (this.role === 'LIA') {
           showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
         } else if (this.role === 'DJ') {
@@ -672,6 +689,9 @@
           characters.push(new GameCharacter(10, { x: 75 + i * 2, y: 40 + i * 2 }, 'VIP'));
         }
       }
+
+      // 6b. BOSS - Featured Character
+      characters.push(new GameCharacter(0, { x: 82, y: 45 }, 'BOSS', 'VINCENT'));
 
       // 7. Guests
       for (let i = 0; i < 25; i++) {

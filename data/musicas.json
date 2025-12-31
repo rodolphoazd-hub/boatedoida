@@ -16,5 +16,47 @@
         "title": "Underground Bass",
         "artist": "SubZero",
         "url": "assets/music3.mp3"
+    },
+    {
+        "id": 4,
+        "title": "Electric Dreams",
+        "artist": "RetroFutur",
+        "url": "assets/music4.mp3"
+    },
+    {
+        "id": 5,
+        "title": "Cyber-Lounge Chill",
+        "artist": "GlitchMode",
+        "url": "assets/music5.mp3"
+    },
+    {
+        "id": 6,
+        "title": "Hyperlight Drifter",
+        "artist": "NeonKnights",
+        "url": "assets/music6.mp3"
+    },
+    {
+        "id": 7,
+        "title": "Midnight Runner",
+        "artist": "Outrun86",
+        "url": "assets/music7.mp3"
+    },
+    {
+        "id": 8,
+        "title": "Blade Dancer",
+        "artist": "ChromeHeart",
+        "url": "assets/music8.mp3"
+    },
+    {
+        "id": 9,
+        "title": "Digital Ghost",
+        "artist": "VoidWalker",
+        "url": "assets/music9.mp3"
+    },
+    {
+        "id": 10,
+        "title": "Endless Night",
+        "artist": "Starlight",
+        "url": "assets/music10.mp3"
     }
 ]

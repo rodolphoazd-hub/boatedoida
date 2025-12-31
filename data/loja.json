@@ -1,0 +1,23 @@
+[
+    {
+        "id": "vip_pass",
+        "name": "VIP Pass 🎫",
+        "price": 100,
+        "description": "Acesso vitalício à área VIP.",
+        "type": "upgrade"
+    },
+    {
+        "id": "energy_drink",
+        "name": "Energy Drink ⚡",
+        "price": 15,
+        "description": "Ganhe +50% de fama por 5 minutos.",
+        "type": "consumable"
+    },
+    {
+        "id": "golden_mic",
+        "name": "Golden Mic 🎤",
+        "price": 500,
+        "description": "O dobro de fama em todas as interações.",
+        "type": "gear"
+    }
+]

@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "title": "Night City Drive",
+        "artist": "CyberTrack",
+        "url": "assets/music1.mp3"
+    },
+    {
+        "id": 2,
+        "title": "Neon Pulse",
+        "artist": "SynthWave",
+        "url": "assets/music2.mp3"
+    },
+    {
+        "id": 3,
+        "title": "Underground Bass",
+        "artist": "SubZero",
+        "url": "assets/music3.mp3"
+    }
+]

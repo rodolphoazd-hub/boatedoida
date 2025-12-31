@@ -59,7 +59,7 @@
       /* 4x4 or 4x2 grid */
       cursor: pointer;
       z-index: 10;
-      transition: left 3s linear, top 3s linear;
+      transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1);
       transform-origin: bottom center;
       will-change: left, top, transform;
     }
@@ -288,32 +288,42 @@
       font-family: 'Courier New', Courier, monospace;
     }
 
-    .mega-tip {
-      position: absolute;
-      color: #ffd700;
-      font-weight: 900;
-      font-size: 24px;
-      pointer-events: none;
-      animation: floatUp 1.2s forwards;
-      z-index: 300;
-      text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    /* Shop UI */
+    #shop-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 4000;
+      padding: 40px;
+      overflow-y: auto;
     }
 
-    @keyframes floatUp {
-      0% {
-        opacity: 0;
-        transform: translateY(0) scale(0.5);
-      }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
 
-      20% {
-        opacity: 1;
-        transform: translateY(-20px) scale(1.2);
-      }
+    .shop-item {
+      padding: 15px;
+      border: 1px solid var(--primary-neon);
+      background: rgba(0, 150, 255, 0.1);
+      text-align: center;
+      transition: all 0.3s;
+    }
 
-      100% {
-        opacity: 0;
-        transform: translateY(-80px) scale(1);
-      }
+    .shop-item:hover {
+      background: rgba(0, 150, 255, 0.3);
+      transform: translateY(-5px);
+    }
+
+    .money-stat {
+      color: #ffd700;
+      font-weight: 900;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     }
   </style>
 </head>
@@ -359,6 +369,11 @@
         <div style="font-size: 10px; color: #888;">FAME</div>
         <div id="fama" style="font-size: 18px; color: #00ff00; font-weight: 900;">0</div>
       </div>
+
+      <div class="glass-panel" style="padding: 5px 15px;">
+        <div style="font-size: 10px; color: #888;">CASH</div>
+        <div id="dinheiro" class="money-stat" style="font-size: 18px;">$0</div>
+      </div>
     </div>
 
     <div id="status-msg">BOA!</div>
@@ -373,8 +388,17 @@
       <div class="ui-button">🏠</div>
       <div class="ui-button">🎁</div>
       <div class="ui-button">👗</div>
-      <div class="ui-button">🎵</div>
-      <div class="ui-button">🛒</div>
+      <div class="ui-button" onclick="musicasTrocadas++; interagirDJ()">🎵</div>
+      <div class="ui-button" onclick="toggleShop()">🛒</div>
+    </div>
+
+    <!-- Shop Overlay -->
+    <div id="shop-overlay">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="color: var(--primary-neon); margin: 0;">CYBER STORE</h2>
+        <button class="btn" style="margin: 0; padding: 10px 20px;" onclick="toggleShop()">FECHAR</button>
+      </div>
+      <div id="loja-lista" class="shop-grid"></div>
     </div>
   </div>
 
@@ -392,7 +416,9 @@
     let nomeJogador = "";
     let fama = 0;
     let chapter = 0;
+    let dinheiro = 100;
     let musicasTrocadas = 0;
+    let playlist = [];
     let characters = [];
 
     const missoes = [
@@ -434,8 +460,18 @@
         const data = await res.json();
         fama = data.fama || 0;
         chapter = data.chapter || 0;
+        dinheiro = data.dinheiro || 100;
+
+        // Carregar playlist da API
+        const musicasRes = await fetch(`${API_URL}/musicas`);
+        playlist = await musicasRes.json();
       } catch (e) {
         console.warn("Offline mode active");
+        playlist = [
+          { url: 'assets/music1.mp3' },
+          { url: 'assets/music2.mp3' },
+          { url: 'assets/music3.mp3' }
+        ];
       }
     }
 
@@ -444,7 +480,7 @@
         await fetch(`${API_URL}/progresso/${nomeJogador}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fama, chapter })
+          body: JSON.stringify({ fama, chapter, dinheiro })
         });
       } catch (e) { }
     }
@@ -556,6 +592,7 @@
         } else {
           showTip(this.element);
           addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
+          addMoney(this.role === 'GUEST' ? 2 : 10);
           showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
           this.interacted = true;
           checkMissions();
@@ -684,8 +721,53 @@
       }
     }
 
+    function addMoney(val) {
+      dinheiro += val;
+      atualizarInterface();
+      salvarProgresso();
+    }
+
+    async function toggleShop() {
+      const overlay = document.getElementById('shop-overlay');
+      if (overlay.style.display === 'block') {
+        overlay.style.display = 'none';
+      } else {
+        overlay.style.display = 'block';
+        const res = await fetch(`${API_URL}/loja/itens`);
+        const itens = await res.json();
+        const lista = document.getElementById('loja-lista');
+        lista.innerHTML = '';
+        itens.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'shop-item';
+          div.innerHTML = `
+            <div style="font-size: 24px;">${item.name}</div>
+            <div style="font-size: 12px; color: #888; margin: 10px 0;">${item.description}</div>
+            <div class="money-stat">$${item.price}</div>
+            <button class="btn" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;" 
+              ${dinheiro < item.price ? 'disabled style="opacity:0.5"' : ''}
+              onclick="buyItem('${item.id}', ${item.price})">COMPRAR</button>
+          `;
+          lista.appendChild(div);
+        });
+      }
+    }
+
+    function buyItem(id, price) {
+      if (dinheiro >= price) {
+        dinheiro -= price;
+        showStatus("COMPRADO!", true);
+        if (id === 'vip_pass') addFama(100);
+        if (id === 'energy_drink') addFama(50);
+        atualizarInterface();
+        salvarProgresso();
+        toggleShop();
+      }
+    }
+
     function atualizarInterface() {
       document.getElementById('fama').innerText = fama;
+      document.getElementById('dinheiro').innerText = `$${dinheiro}`;
       document.getElementById('missao').innerText = chapters[chapter];
     }
 
@@ -704,18 +786,24 @@
       const rect = elem.getBoundingClientRect();
       const tip = document.createElement('div');
       tip.className = 'mega-tip';
-      tip.innerText = "GORJETA!!";
+      tip.innerText = "YAY!!";
+      tip.style.position = 'absolute';
+      tip.style.color = '#ffd700';
+      tip.style.fontWeight = '900';
+      tip.style.fontSize = '24px';
       tip.style.left = `${rect.left + rect.width / 2}px`;
       tip.style.top = `${rect.top}px`;
+      tip.style.pointerEvents = 'none';
+      tip.style.zIndex = '300';
       document.body.appendChild(tip);
       setTimeout(() => tip.remove(), 1200);
     }
 
     function tocarMusica() {
-      const player = document.getElementById('player');
-      const musicas = ['assets/music1.mp3', 'assets/music2.mp3', 'assets/music3.mp3'];
-      player.src = musicas[musicasTrocadas % musicas.length];
-      player.play().catch(() => console.log("Music interaction required"));
+      if (!playlist.length) return;
+      const track = playlist[musicasTrocadas % playlist.length];
+      audio.play(track.url);
+      if (track.title) showStatus(`TRACK: ${track.title}`, true);
     }
 
     function finalizarJogo() {

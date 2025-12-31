@@ -542,15 +542,16 @@
 
       // Fetch from Jamendo API for real "online" music
       try {
-        const jamendoRes = await fetch('https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=json&limit=10&tags=cyberpunk,electronic&order=popularity_week');
+        const jamendoRes = await fetch('https://api.jamendo.com/v3.0/tracks/?client_id=709fa152&format=json&limit=10&tags=cyberpunk,electronic&order=popularity_week');
         const jamendoData = await jamendoRes.json();
         if (jamendoData.results && jamendoData.results.length > 0) {
           playlist = jamendoData.results.map(t => ({
             id: t.id,
             title: t.name,
             artist: t.artist_name,
-            url: t.audio
+            url: t.audio // Jamendo typically provides a usable mp3 link
           }));
+          console.log("Playlist loaded from Jamendo:", playlist.length, "tracks");
         } else {
           throw new Error("No Jamendo results");
         }
@@ -588,6 +589,21 @@
         this.fadeInterval = null;
         this.fadeOutTime = 2000;
         this.fadeInTime = 2000;
+
+        // Set up error handling for both players
+        this.players.forEach((p, idx) => {
+          p.onerror = () => {
+            console.warn(`Player ${idx} failed to load: ${p.src}`);
+            showStatus("ERRO NA TRACK, PULANDO...", true);
+            this.isCrossfading = false;
+            if (this.fadeInterval) clearInterval(this.fadeInterval);
+            // Skip to next track
+            setTimeout(() => {
+              musicasTrocadas++;
+              tocarMusica(true);
+            }, 1000);
+          };
+        });
       }
 
       play(src, force = false) {
@@ -1204,10 +1220,10 @@
 
       showStatus("BUSCANDO NO SPOTIFY...", true);
       // Fallback searching on Jamendo but formatted as Spotify
-      fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=json&limit=5&search=${query}`)
+      fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=709fa152&format=json&limit=5&search=${query}`)
         .then(res => res.json())
         .then(data => {
-          if (data.results.length > 0) {
+          if (data.results && data.results.length > 0) {
             playlist = data.results.map(t => ({
               id: t.id,
               title: t.name,
@@ -1216,9 +1232,14 @@
             }));
             musicasTrocadas = 0;
             tocarMusica(true); // Force change on search
+            showStatus("SPOTIFY: PLAYLIST ATUALIZADA!", true);
           } else {
-            showDialogue("SPOTIFY", "Nenhuma track encontrada para essa busca.");
+            showDialogue("SPOTIFY", "Nenhuma track encontrada para essa busca. Tente termos como 'Electronic', 'Cyberpunk' ou 'Phonk'.");
           }
+        })
+        .catch(err => {
+          console.error("Spotify Search Error:", err);
+          showDialogue("SISTEMA", "Erro ao conectar com a rede. Tente novamente em alguns segundos.");
         });
     }
 

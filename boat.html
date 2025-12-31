@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Boate Simulator - Isometric Edition</title>
+  <title>Boate Simulator - Premium Edition</title>
   <style>
     :root {
       --primary-neon: #00f2ff;
@@ -16,7 +16,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #0a0a0a;
+      background-color: #050505;
       color: white;
       overflow: hidden;
       height: 100vh;
@@ -27,40 +27,41 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background-image: url('assets/nightclub_iso.png');
+      background-image: url('assets/nightclub_premium.png');
       background-size: cover;
       background-position: center;
       display: none;
       overflow: hidden;
     }
 
-    /* Ambient Lighting */
+    /* Ambient Lighting Overlay */
     #club::after {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.4) 100%);
+      inset: 0;
+      background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5));
       pointer-events: none;
+    }
+
+    /* SVG Filter to remove green background */
+    .chroma-key {
+      filter: url(#remove-green);
     }
 
     .character {
       position: absolute;
-      width: 60px;
-      height: 100px;
-      background-image: url('assets/characters_iso.png');
-      background-size: 400px 300px;
-      /* Assuming a grid-like sheet */
+      width: 150px;
+      height: 150px;
+      background-image: url('assets/characters_green.png');
+      background-size: 600px 600px;
       cursor: pointer;
-      transition: transform 0.2s, filter 0.3s;
+      transition: transform 0.2s;
       z-index: 10;
     }
 
     .character:hover {
-      filter: brightness(1.3) drop-shadow(0 0 8px var(--primary-neon));
       transform: scale(1.1);
+      filter: url(#remove-green) brightness(1.3) drop-shadow(0 0 10px var(--primary-neon));
     }
 
     @keyframes bounce {
@@ -71,66 +72,67 @@
       }
 
       50% {
-        transform: translateY(-10px);
+        transform: translateY(-8px);
       }
     }
 
     .dancing {
-      animation: bounce 0.6s infinite alternate ease-in-out;
+      animation: bounce 0.5s infinite alternate ease-in-out;
     }
 
     #dj-booth {
       position: absolute;
-      left: 48%;
-      top: 40%;
-      width: 120px;
-      height: 100px;
-      background-image: url('assets/dj_iso.png');
-      background-size: contain;
-      background-repeat: no-repeat;
+      left: 45%;
+      top: 15%;
+      width: 180px;
+      height: 120px;
+      background: rgba(0, 242, 255, 0.1);
+      border: 2px solid var(--primary-neon);
+      border-radius: 10px;
       cursor: pointer;
       z-index: 5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      color: var(--primary-neon);
+      text-shadow: 0 0 10px var(--primary-neon);
     }
 
-    #info-panel {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.85);
-      padding: 15px 25px;
-      border-radius: 12px;
-      border: 1px solid var(--primary-neon);
-      box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
-      z-index: 100;
-      backdrop-filter: blur(5px);
-    }
-
+    #info-panel,
     #mission-panel {
       position: absolute;
       top: 20px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(10, 10, 10, 0.9);
       padding: 15px 25px;
       border-radius: 12px;
-      border: 1px solid var(--secondary-neon);
-      box-shadow: 0 0 15px rgba(255, 0, 234, 0.3);
       z-index: 100;
-      backdrop-filter: blur(5px);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #info-panel {
+      left: 20px;
+      border: 1px solid var(--primary-neon);
+    }
+
+    #mission-panel {
+      right: 20px;
+      border: 1px solid var(--secondary-neon);
     }
 
     #status-msg {
       position: absolute;
-      bottom: 20%;
+      bottom: 25%;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 24px;
-      font-weight: bold;
+      font-size: 32px;
+      font-weight: 800;
       text-transform: uppercase;
       color: var(--primary-neon);
-      text-shadow: 0 0 10px var(--primary-neon);
+      text-shadow: 0 0 20px var(--primary-neon);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.3s;
       z-index: 200;
     }
 
@@ -138,52 +140,58 @@
     #fim {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle, #1a0033 0%, #000 100%);
+      background: radial-gradient(circle, #200044 0%, #050505 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 500;
+      z-index: 1000;
     }
 
     .btn {
-      padding: 15px 45px;
-      font-size: 20px;
+      padding: 18px 50px;
+      font-size: 22px;
       background: linear-gradient(45deg, var(--accent-neon), var(--secondary-neon));
       border: none;
       border-radius: 50px;
       color: white;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 30px;
-      box-shadow: 0 0 20px rgba(188, 0, 255, 0.5);
-      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 40px;
+      box-shadow: 0 0 30px rgba(188, 0, 255, 0.4);
+      transition: all 0.3s;
     }
 
     .btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 35px rgba(188, 0, 255, 0.8);
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 10px 40px rgba(188, 0, 255, 0.7);
     }
 
     .mega-tip {
       position: absolute;
       color: #ffd700;
-      font-weight: bold;
-      font-size: 20px;
+      font-weight: 900;
+      font-size: 24px;
       pointer-events: none;
-      animation: floatUp 1s forwards;
+      animation: floatUp 1.2s forwards;
       z-index: 300;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
     }
 
     @keyframes floatUp {
       0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5);
+      }
+
+      20% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(-20px) scale(1.2);
       }
 
       100% {
         opacity: 0;
-        transform: translateY(-50px);
+        transform: translateY(-80px) scale(1);
       }
     }
   </style>
@@ -191,37 +199,49 @@
 
 <body>
 
+  <!-- SVG Filter to remove green -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <filter id="remove-green">
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        1 -1 1 1 0" />
+    </filter>
+  </svg>
+
   <div id="inicio">
-    <h1 style="font-size: 48px; margin-bottom: 5px;">BOATE <span style="color: var(--primary-neon)">DOIDA</span></h1>
-    <p style="color: #aaa; margin-top: 5px;">O melhor simulador de nightlife isométrico</p>
-    <button class="btn" onclick="iniciarJogo()">ENTRAR NO CLUB</button>
+    <h1 style="font-size: 64px; margin-bottom: 0;">BOATE <span style="color: var(--primary-neon)">DOIDA</span></h1>
+    <p style="color: #888; letter-spacing: 5px; text-transform: uppercase;">Premium Experience</p>
+    <button class="btn" onclick="iniciarJogo()">START THE PARTY</button>
   </div>
 
   <div id="club">
     <div id="info-panel">
-      <div style="font-size: 14px; color: #888">PROMOTOR</div>
-      <div id="jogador" style="font-size: 20px; font-weight: bold; color: var(--primary-neon)">---</div>
-      <div style="margin-top: 10px;">FAMA: <span id="fama" style="color: #00ff00">0</span></div>
+      <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Promoter</div>
+      <div id="jogador" style="font-size: 22px; font-weight: 900; color: var(--primary-neon)">---</div>
+      <div style="margin-top: 12px; font-weight: bold;">FAMA: <span id="fama" style="color: #00ff00">0</span></div>
     </div>
 
     <div id="mission-panel">
-      <div style="font-size: 14px; color: #888">OBJETIVO ATUAL</div>
-      <div id="missao" style="font-size: 18px; color: var(--secondary-neon)">Conectando...</div>
+      <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Current Goal</div>
+      <div id="missao" style="font-size: 18px; color: var(--secondary-neon); font-weight: bold;">Initializing...</div>
     </div>
 
     <div id="status-msg">BOA!</div>
 
-    <div id="dj-booth" onclick="interagirDJ()"></div>
+    <div id="dj-booth" onclick="interagirDJ()">DJ BOOTH</div>
 
     <div id="world">
-      <!-- Personagens serão gerados aqui -->
+      <!-- Characters will be injected here -->
     </div>
   </div>
 
   <div id="fim" style="display: none;">
-    <h1>NOITE <span style="color: var(--accent-neon)">FINALIZADA</span></h1>
-    <p>Sua fama alcançou: <span id="famaFinal" style="font-size: 32px; color: #00ff00">0</span></p>
-    <button class="btn" onclick="location.reload()">REINICIAR</button>
+    <h1 style="font-size: 48px;">PARTY <span style="color: var(--accent-neon)">OVER</span></h1>
+    <p style="font-size: 20px;">Legendary Fame: <span id="famaFinal"
+        style="font-size: 40px; color: #00ff00; font-weight: 900;">0</span></p>
+    <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
   </div>
 
   <audio id="player" loop></audio>
@@ -232,6 +252,7 @@
     let fama = 0;
     let missaoAtual = 0;
     let musicasTrocadas = 0;
+    const characters = [];
 
     const missoes = [
       "Anime a pista! (Interaja com 3 pessoas)",
@@ -241,8 +262,17 @@
       "Parabéns! Você é o Rei da Noite!"
     ];
 
+    const HOTSPOTS = [
+      { x: 50, y: 75, name: 'DANCE_FLOOR' },
+      { x: 30, y: 70, name: 'DANCE_FLOOR' },
+      { x: 70, y: 70, name: 'DANCE_FLOOR' },
+      { x: 25, y: 55, name: 'BAR' },
+      { x: 75, y: 55, name: 'VIP' },
+      { x: 50, y: 35, name: 'DJ_FRONT' }
+    ];
+
     async function iniciarJogo() {
-      nomeJogador = prompt("Qual seu nome de DJ?", "DJ Crazy");
+      nomeJogador = prompt("Qual o seu Nick de DJ?", "DJ Doido");
       if (!nomeJogador) nomeJogador = "Anonimo";
 
       document.getElementById('jogador').innerText = nomeJogador;
@@ -253,6 +283,8 @@
       spawnCharacters();
       atualizarInterface();
       tocarMusica();
+
+      requestAnimationFrame(gameLoop);
     }
 
     async function carregarProgresso() {
@@ -262,7 +294,7 @@
         fama = data.fama || 0;
         missaoAtual = data.missao || 0;
       } catch (e) {
-        console.warn("Backend não respondendo, jogando offline");
+        console.warn("Offline mode active");
       }
     }
 
@@ -276,47 +308,112 @@
       } catch (e) { }
     }
 
-    function spawnCharacters() {
-      const world = document.getElementById('world');
-      const positions = [
-        { x: 35, y: 65, char: 0 },
-        { x: 45, y: 75, char: 1 },
-        { x: 60, y: 60, char: 2 },
-        { x: 25, y: 80, char: 3 },
-        { x: 70, y: 70, char: 4 }
-      ];
+    class GameCharacter {
+      constructor(index, startPos) {
+        this.element = document.createElement('div');
+        this.element.className = 'character chroma-key dancing';
+        this.x = startPos.x;
+        this.y = startPos.y;
+        this.targetX = this.x;
+        this.targetY = this.y;
+        this.speed = 0.04 + Math.random() * 0.04;
+        this.state = 'DANCING';
+        this.interacted = false;
 
-      positions.forEach((pos, i) => {
-        const char = document.createElement('div');
-        char.className = 'character dancing';
-        char.style.left = `${pos.x}%`;
-        char.style.top = `${pos.y}%`;
+        // Sheet mapping (assume 4x2 layout)
+        const row = Math.floor(index / 4);
+        const col = index % 4;
+        this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
+        this.element.onclick = () => this.interact();
 
-        // Sprite sheet mapping (assuming characters_iso.png layout)
-        const row = Math.floor(pos.char / 4);
-        const col = pos.char % 4;
-        char.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
-
-        char.onclick = () => interagirPersonagem(char);
-        world.appendChild(char);
-      });
-    }
-
-    function interagirPersonagem(elem) {
-      showTip(elem);
-      addFama(5);
-      showStatus("DANCE!");
-
-      if (missaoAtual === 0) {
-        // Lógica simples de balcão de interações
-        elem.interacted = true;
-        const total = document.querySelectorAll('.character').length;
-        const interacted = Array.from(document.querySelectorAll('.character')).filter(c => c.interacted).length;
-        if (interacted >= 3) completarMissao();
+        document.getElementById('world').appendChild(this.element);
+        this.updatePos();
+        this.scheduleNextAction();
       }
 
-      if (fama >= 50 && missaoAtual === 2) completarMissao();
-      if (fama >= 100 && missaoAtual === 3) completarMissao();
+      updatePos() {
+        this.element.style.left = `calc(${this.x}% - 75px)`;
+        this.element.style.top = `calc(${this.y}% - 120px)`;
+        this.element.style.zIndex = Math.floor(this.y * 10);
+      }
+
+      scheduleNextAction() {
+        const delay = 4000 + Math.random() * 8000;
+        setTimeout(() => {
+          this.decideNextState();
+          this.scheduleNextAction();
+        }, delay);
+      }
+
+      decideNextState() {
+        if (this.state === 'WALKING') return;
+
+        const rand = Math.random();
+        if (rand < 0.35) {
+          const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
+          this.targetX = spot.x + (Math.random() * 8 - 4);
+          this.targetY = spot.y + (Math.random() * 8 - 4);
+          this.state = 'WALKING';
+          this.element.classList.remove('dancing');
+        } else if (rand < 0.85) {
+          this.state = 'DANCING';
+          this.element.classList.add('dancing');
+        } else {
+          this.state = 'IDLE';
+          this.element.classList.remove('dancing');
+        }
+      }
+
+      move() {
+        if (this.state !== 'WALKING') return;
+
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 0.3) {
+          this.x = this.targetX;
+          this.y = this.targetY;
+          this.state = 'DANCING';
+          this.element.classList.add('dancing');
+          return;
+        }
+
+        this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+        this.x += (dx / dist) * this.speed;
+        this.y += (dy / dist) * this.speed;
+        this.updatePos();
+      }
+
+      interact() {
+        showTip(this.element);
+        addFama(5);
+        showStatus("ISSO AÍ!");
+
+        if (missaoAtual === 0) {
+          this.interacted = true;
+          const interactedCount = characters.filter(c => c.interacted).length;
+          if (interactedCount >= 3) completarMissao();
+        }
+
+        if (fama >= 50 && missaoAtual === 2) completarMissao();
+        if (fama >= 100 && missaoAtual === 3) completarMissao();
+      }
+    }
+
+    function spawnCharacters() {
+      for (let i = 0; i < 8; i++) {
+        const spot = HOTSPOTS[i % HOTSPOTS.length];
+        characters.push(new GameCharacter(i, {
+          x: spot.x + (Math.random() * 10 - 5),
+          y: spot.y + (Math.random() * 10 - 5)
+        }));
+      }
+    }
+
+    function gameLoop() {
+      characters.forEach(c => c.move());
+      requestAnimationFrame(gameLoop);
     }
 
     function interagirDJ() {
@@ -343,7 +440,7 @@
       atualizarInterface();
 
       if (missaoAtual >= missoes.length - 1) {
-        setTimeout(finalizarJogo, 2000);
+        setTimeout(finalizarJogo, 3000);
       }
     }
 
@@ -356,25 +453,29 @@
       const msg = document.getElementById('status-msg');
       msg.innerText = text;
       msg.style.opacity = 1;
-      setTimeout(() => { msg.style.opacity = 0; }, long ? 2000 : 800);
+      msg.style.transform = 'translateX(-50%) scale(1.2)';
+      setTimeout(() => {
+        msg.style.opacity = 0;
+        msg.style.transform = 'translateX(-50%) scale(1)';
+      }, long ? 2500 : 1000);
     }
 
     function showTip(elem) {
       const rect = elem.getBoundingClientRect();
       const tip = document.createElement('div');
       tip.className = 'mega-tip';
-      tip.innerText = "MEGA GORJETA x4!!";
-      tip.style.left = `${rect.left}px`;
+      tip.innerText = "GORJETA!!";
+      tip.style.left = `${rect.left + rect.width / 2}px`;
       tip.style.top = `${rect.top}px`;
       document.body.appendChild(tip);
-      setTimeout(() => tip.remove(), 1000);
+      setTimeout(() => tip.remove(), 1200);
     }
 
     function tocarMusica() {
       const player = document.getElementById('player');
       const musicas = ['assets/music1.mp3', 'assets/music2.mp3', 'assets/music3.mp3'];
       player.src = musicas[musicasTrocadas % musicas.length];
-      player.play().catch(() => console.log("Interação necessária para audio"));
+      player.play().catch(() => console.log("Music interaction required"));
     }
 
     function finalizarJogo() {

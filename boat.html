@@ -535,15 +535,21 @@
       }
 
       handleInteraction() {
-        if (this.role === 'ALEX' && chapter === 0) {
-          showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
-            tutorialComplete = true;
-          });
+        if (this.role === 'ALEX') {
+          if (chapter === 0) {
+            showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
+              tutorialComplete = true;
+            });
+          } else if (chapter === 1) {
+            showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.");
+          }
+        } else if (this.role === 'LIA') {
+          showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
         } else if (this.role === 'DJ') {
           interagirDJ();
         } else {
           showTip(this.element);
-          addFama(this.role === 'GUEST' ? 5 : 15);
+          addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
           showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
           this.interacted = true;
           checkMissions();
@@ -598,6 +604,9 @@
     ];
 
     function spawnCharacters() {
+      characters.forEach(c => c.element.remove());
+      characters = [];
+
       // 1. Alex (Gerente)
       characters.push(new GameCharacter(4, { x: 15, y: 70 }, 'ALEX'));
 
@@ -610,8 +619,20 @@
       // 4. Barman
       characters.push(new GameCharacter(5, { x: 25, y: 50 }, 'BARMAN'));
 
-      // 5.Guests
-      for (let i = 0; i < 30; i++) {
+      // 5. Lia (Dancer) - Chapter 1+
+      if (chapter >= 1) {
+        characters.push(new GameCharacter(7, { x: 50, y: 60 }, 'LIA'));
+      }
+
+      // 6. VIPs - Chapter 1+
+      if (chapter >= 1) {
+        for (let i = 0; i < 5; i++) {
+          characters.push(new GameCharacter(10, { x: 75 + i * 2, y: 40 + i * 2 }, 'VIP'));
+        }
+      }
+
+      // 7. Guests
+      for (let i = 0; i < 25; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
         characters.push(new GameCharacter(i % 16, {
           x: spot.x + (Math.random() * 20 - 10),
@@ -659,7 +680,7 @@
 
     function atualizarInterface() {
       document.getElementById('fama').innerText = fama;
-      document.getElementById('missao').innerText = missoes[missaoAtual];
+      document.getElementById('missao').innerText = chapters[chapter];
     }
 
     function showStatus(text, long = false) {

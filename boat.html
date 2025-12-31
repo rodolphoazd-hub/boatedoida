@@ -525,15 +525,26 @@
         chapter = data.chapter || 0;
         dinheiro = data.dinheiro || 100;
 
-        // Carregar playlist da API
-        const musicasRes = await fetch(`${API_URL}/musicas`);
-        playlist = await musicasRes.json();
+        // Fetch from Jamendo API for real "online" music (Cyberpunk/Electronic tags)
+        try {
+          const jamendoRes = await fetch('https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=jsonptr&limit=10&tags=cyberpunk,electronic&order=popularity_week');
+          const jamendoData = await jamendoRes.json();
+          playlist = jamendoData.results.map(t => ({
+            id: t.id,
+            title: t.name,
+            artist: t.artist_name,
+            url: t.audio
+          }));
+        } catch (je) {
+          console.warn("Jamendo API failed, using fallback");
+          const musicasRes = await fetch(`${API_URL}/musicas`);
+          playlist = await musicasRes.json();
+        }
       } catch (e) {
         console.warn("Offline mode active");
         playlist = [
-          { url: 'assets/music1.mp3' },
-          { url: 'assets/music2.mp3' },
-          { url: 'assets/music3.mp3' }
+          { url: 'assets/music1.mp3', title: "Local Track 1", artist: "Internal" },
+          { url: 'assets/music2.mp3', title: "Local Track 2", artist: "Internal" }
         ];
       }
     }
@@ -975,8 +986,12 @@
     async function loadShopItems(category) {
       shopCategory = category;
       const tabs = document.querySelectorAll('.shop-tab');
-      tabs.forEach(t => t.classList.remove('active'));
-      // Update active tab UI...
+      tabs.forEach(t => {
+        t.classList.remove('active');
+        if (t.innerText.toLowerCase().includes(category) || (category === 'all' && t.innerText === 'TUDO')) {
+          t.classList.add('active');
+        }
+      });
 
       const res = await fetch(`${API_URL}/loja/itens`);
       let itens = await res.json();
@@ -987,14 +1002,20 @@
 
       const lista = document.getElementById('loja-lista');
       lista.innerHTML = '';
+
+      if (category === 'gift') {
+        lista.innerHTML = '<div style="grid-column: 1/-1; color: #ff00ff; font-weight: 900; margin-bottom: 10px;">🎁 LOJA DE PRESENTES</div>';
+      }
+
       itens.forEach(item => {
         const div = document.createElement('div');
         div.className = 'shop-item';
+        if (item.type === 'gift') div.style.borderColor = '#ff00ff';
         div.innerHTML = `
           <div style="font-size: 24px;">${item.name}</div>
           <div style="font-size: 12px; color: #888; margin: 10px 0;">${item.description}</div>
           <div class="money-stat">$${item.price}</div>
-          <button class="btn" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;" 
+          <button class="btn" style="padding: 10px 20px; font-size: 14px; margin-top: 10px; ${item.type === 'gift' ? 'border-color: #ff00ff; color: #ff00ff;' : ''}" 
             ${dinheiro < item.price ? 'disabled style="opacity:0.5"' : ''}
             onclick="buyItem('${item.id}', ${item.price}, '${item.type}', '${item.name}')">COMPRAR</button>
         `;

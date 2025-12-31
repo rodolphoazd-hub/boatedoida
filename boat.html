@@ -74,6 +74,39 @@
       background-repeat: no-repeat !important;
     }
 
+    /* Alex Frames mapping */
+    .alex-character {
+      width: 200px !important;
+      height: 300px !important;
+      background-size: contain !important;
+      background-repeat: no-repeat !important;
+      background-position: center bottom !important;
+    }
+
+    /* Shop UI Tabs and Categories */
+    .shop-header {
+      display: flex;
+      gap: 15px;
+      margin: 15px 0;
+      border-bottom: 1px solid rgba(0, 150, 255, 0.3);
+      padding-bottom: 10px;
+    }
+
+    .shop-tab {
+      cursor: pointer;
+      color: #888;
+      font-size: 14px;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .shop-tab:hover,
+    .shop-tab.active {
+      color: var(--primary-neon);
+      text-shadow: 0 0 10px var(--primary-neon);
+    }
+
     /* Pixel Art Animations (Step-based for retro feel) */
     @keyframes pixel-walk {
       0% {
@@ -384,6 +417,13 @@
         <div style="font-size: 10px; color: #888;">CASH</div>
         <div id="dinheiro" class="money-stat" style="font-size: 18px;">$0</div>
       </div>
+
+      <div class="glass-panel" style="padding: 5px 15px; flex-grow: 1; max-width: 200px; text-align: left;">
+        <div style="font-size: 10px; color: #888;">NOW PLAYING</div>
+        <div id="music-info"
+          style="font-size: 12px; color: var(--primary-neon); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          ...</div>
+      </div>
     </div>
 
     <div id="status-msg">BOA!</div>
@@ -406,6 +446,11 @@
     <div id="shop-overlay">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2 style="color: var(--primary-neon); margin: 0;">CYBER STORE</h2>
+        <div id="shop-tabs" class="shop-header">
+          <div class="shop-tab active" onclick="loadShopItems('all')">TUDO</div>
+          <div class="shop-tab" onclick="loadShopItems('gift')">PRESENTES</div>
+          <div class="shop-tab" onclick="loadShopItems('upgrade')">UPGRADES</div>
+        </div>
         <button class="btn" style="margin: 0; padding: 10px 20px;" onclick="toggleShop()">FECHAR</button>
       </div>
       <div id="loja-lista" class="shop-grid"></div>
@@ -430,6 +475,8 @@
     let musicasTrocadas = 0;
     let playlist = [];
     let characters = [];
+    let inventario = [];
+    let shopCategory = 'all';
 
     const missoes = [
       "Anime a pista! (Interaja com 3 pessoas)",
@@ -545,6 +592,32 @@
       const box = document.getElementById('dialogue-box');
       document.getElementById('dialogue-name').innerText = name;
       document.getElementById('dialogue-text').innerText = text;
+
+      // Add Gift button if it's a key NPC
+      const giftBtn = document.createElement('button');
+      giftBtn.className = 'btn';
+      giftBtn.style.padding = '5px 15px';
+      giftBtn.style.fontSize = '12px';
+      giftBtn.style.marginTop = '10px';
+      giftBtn.innerText = "🎁 DAR PRESENTE";
+      giftBtn.onclick = (e) => {
+        e.stopPropagation();
+        showGiftMenu(name.split(' ')[0].toUpperCase(), name);
+      };
+
+      const keyRoles = ['ALEX', 'LIA', 'VINCENT', 'SOFIA', 'RAFAEL'];
+      const isKey = keyRoles.some(r => name.toUpperCase().includes(r));
+
+      const existingBtn = box.querySelector('.gift-btn-container');
+      if (existingBtn) existingBtn.remove();
+
+      if (isKey) {
+        const container = document.createElement('div');
+        container.className = 'gift-btn-container';
+        container.appendChild(giftBtn);
+        document.getElementById('dialogue-text').appendChild(container);
+      }
+
       box.style.display = 'block';
       box.onclick = () => {
         box.style.display = 'none';
@@ -575,6 +648,9 @@
         if (role === 'BOSS') {
           this.element.classList.add('boss-character');
           this.setPose(0); // Default idle
+        } else if (role === 'ALEX') {
+          this.element.classList.add('alex-character');
+          this.setAlexFrame(1);
         } else {
           // Sheet mapping for characters_green.png (4 columns)
           const row = Math.floor(index / 4);
@@ -586,11 +662,17 @@
         this.updatePos();
         if (role === 'GUEST') this.scheduleNextAction();
         if (role === 'BOSS') this.startBossBehavior();
+        if (role === 'ALEX') this.startAlexBehavior();
       }
 
       setPose(index) {
         if (this.role !== 'BOSS') return;
         this.element.style.backgroundPosition = `-${index * 250}px 0px`;
+      }
+
+      setAlexFrame(frame) {
+        if (this.role !== 'ALEX') return;
+        this.element.style.backgroundImage = `url('assets/Alex${frame}.png')`;
       }
 
       startBossBehavior() {
@@ -601,114 +683,126 @@
           }
         }, 4000);
       }
-    }
 
-    updatePos() {
-      // Adjust offset if BOSS
-      const offsetX = this.role === 'BOSS' ? 125 : 75;
-      const offsetY = this.role === 'BOSS' ? 350 : 120;
-      this.element.style.left = `calc(${this.x}% - ${offsetX}px)`;
-      this.element.style.top = `calc(${this.y}% - ${offsetY}px)`;
-      this.element.style.zIndex = Math.floor(this.y * 10);
-    }
-
-    handleInteraction() {
-      if (this.role === 'ALEX') {
-        if (chapter === 0) {
-          showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
-            tutorialComplete = true;
-          });
-        } else if (chapter === 1) {
-          showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.");
-        } else if (chapter === 2) {
-          showDialogue("Alex", "O clima está estranho hoje... O Rafael parecia preocupado com algo na entrada.");
-        } else if (chapter >= 3) {
-          showDialogue("Alex", "Foque na Sofia! Ela quer roubar seu lugar no DJ Booth.");
-        }
-      } else if (this.role === 'BOSS') {
-        this.setPose(1); // POINT pose on interaction
-        if (chapter === 4) {
-          showDialogue("Vincent (O Dono)", "O Alex está acabado. Tenho uma proposta: esqueça aqueles documentos e você será meu parceiro número 1.", () => {
-            showStatus("ESCOLHA SEU DESTINO", true);
-            confirmarEscolhaFinal();
-            this.setPose(0);
-          });
-        } else {
-          showDialogue("Vincent (O Dono)", "Nada mal para um novato. Mas para ser o Rei da Noite, você precisará de mais do que apenas música. Mostre-me que você sabe gastar na minha loja.", () => {
-            this.setPose(0);
-          });
-        }
-      } else if (this.role === 'LIA') {
-        showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
-      } else if (this.role === 'SOFIA') {
-        if (chapter === 3) {
-          showDialogue("Sofia (DJ Rival)", "Então você é o queridinho do Alex? Vamos ver se aguenta um set de verdade. Me mostre o que você tem até chegarmos a 1000 de FAMA!", () => {
-            showStatus("DJ BATTLE INICIADA!", true);
-          });
-        } else {
-          showDialogue("Sofia", "Ainda temos o que conversar sobre aquele contrato...");
-        }
-      } else if (this.role === 'SECURITY') {
-        if (chapter === 2) {
-          showDialogue("Rafael (Segurança)", "Ei, DJ! Escuta... Alguém andou mexendo no sistema de câmeras do escritório do Alex. Você devia dar uma olhada lá atrás do bar.", () => {
-            const trigger = document.getElementById('office-trigger');
-            if (trigger) trigger.style.display = 'block';
-          });
-        } else {
-          showDialogue("Rafael", "Tudo sob controle por aqui. Continue o show!");
-        }
-      } else if (this.role === 'INVESTIGATION') {
-        showDialogue("Sistema", "Você encontrou documentos sobre uma dívida secreta da boate... Alguém está tentando sabotar o Alex!", () => {
-          this.element.style.display = 'none';
-          completarMissao();
-        });
-      } else if (this.role === 'DJ') {
-        interagirDJ();
-      } else {
-        showTip(this.element);
-        addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
-        addMoney(this.role === 'GUEST' ? 2 : 10);
-        showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
-        this.interacted = true;
-        checkMissions();
+      startAlexBehavior() {
+        setInterval(() => {
+          if (Math.random() > 0.6) {
+            const frame = Math.floor(Math.random() * 4) + 1;
+            this.setAlexFrame(frame);
+          }
+        }, 5000);
       }
-    }
 
-    scheduleNextAction() {
-      const delay = 3000 + Math.random() * 5000;
-      setTimeout(() => {
-        this.decideNextState();
-        this.scheduleNextAction();
-      }, delay);
-    }
+      updatePos() {
+        // Adjust offset if BOSS or ALEX
+        let offsetX = 75, offsetY = 120;
+        if (this.role === 'BOSS') { offsetX = 125; offsetY = 350; }
+        if (this.role === 'ALEX') { offsetX = 100; offsetY = 280; }
 
-    decideNextState() {
-      if (this.role !== 'GUEST') return;
-      const rand = Math.random();
-      if (rand < 0.45) {
-        const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
-        const targetX = spot.x + (Math.random() * 8 - 4);
-        const targetY = spot.y + (Math.random() * 8 - 4);
-        const dx = targetX - this.x;
-        this.element.classList.remove('dancing');
-        this.element.classList.add('walking');
-        this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
-        this.x = targetX;
-        this.y = targetY;
-        this.updatePos();
+        this.element.style.left = `calc(${this.x}% - ${offsetX}px)`;
+        this.element.style.top = `calc(${this.y}% - ${offsetY}px)`;
+        this.element.style.zIndex = Math.floor(this.y * 10);
+      }
+
+      handleInteraction() {
+        if (this.role === 'ALEX') {
+          this.setAlexFrame(3); // Point/Gesture on interaction
+          if (chapter === 0) {
+            showDialogue("Alex (Gerente)", "Bem-vindo à Boate Noite Selvagem! Sou o Alex. Para começar sua fama, troque a música no DJ e fale com 3 convidados.", () => {
+              tutorialComplete = true;
+              this.setAlexFrame(1);
+            });
+          } else if (chapter === 1) {
+            showDialogue("Alex", "Você está mandando bem! Fale com a Lia na pista, ela tem dicas valiosas.", () => this.setAlexFrame(1));
+          } else if (chapter === 2) {
+            showDialogue("Alex", "O clima está estranho hoje... O Rafael parecia preocupado com algo na entrada.", () => this.setAlexFrame(1));
+          } else if (chapter >= 3) {
+            showDialogue("Alex", "Foque na Sofia! Ela quer roubar seu lugar no DJ Booth.", () => this.setAlexFrame(1));
+          }
+        } else if (this.role === 'BOSS') {
+          this.setPose(1); // POINT pose on interaction
+          if (chapter === 4) {
+            showDialogue("Vincent (O Dono)", "O Alex está acabado. Tenho uma proposta: esqueça aqueles documentos e você será meu parceiro número 1.", () => {
+              showStatus("ESCOLHA SEU DESTINO", true);
+              confirmarEscolhaFinal();
+              this.setPose(0);
+            });
+          } else {
+            showDialogue("Vincent (O Dono)", "Nada mal para um novato. Mas para ser o Rei da Noite, você precisará de mais do que apenas música. Mostre-me que você sabe gastar na minha loja.", () => {
+              this.setPose(0);
+            });
+          }
+        } else if (this.role === 'LIA') {
+          showDialogue("Lia (Dançarina)", "Ei! Para bombar essa boate, mude o ritmo pro eletrônico e garanta que 5 VIPs estejam felizes!");
+        } else if (this.role === 'SOFIA') {
+          if (chapter === 3) {
+            showDialogue("Sofia (DJ Rival)", "Então você é o queridinho do Alex? Vamos ver se aguenta um set de verdade. Me mostre o que você tem até chegarmos a 1000 de FAMA!", () => {
+              showStatus("DJ BATTLE INICIADA!", true);
+            });
+          } else {
+            showDialogue("Sofia", "Ainda temos o que conversar sobre aquele contrato...");
+          }
+        } else if (this.role === 'SECURITY') {
+          if (chapter === 2) {
+            showDialogue("Rafael (Segurança)", "Ei, DJ! Escuta... Alguém andou mexendo no sistema de câmeras do escritório do Alex. Você devia dar uma olhada lá atrás do bar.", () => {
+              const trigger = document.getElementById('office-trigger');
+              if (trigger) trigger.style.display = 'block';
+            });
+          } else {
+            showDialogue("Rafael", "Tudo sob controle por aqui. Continue o show!");
+          }
+        } else if (this.role === 'INVESTIGATION') {
+          showDialogue("Sistema", "Você encontrou documentos sobre uma dívida secreta da boate... Alguém está tentando sabotar o Alex!", () => {
+            this.element.style.display = 'none';
+            completarMissao();
+          });
+        } else if (this.role === 'DJ') {
+          interagirDJ();
+        } else {
+          showTip(this.element);
+          addFama(this.role === 'GUEST' ? 5 : (this.role === 'VIP' ? 15 : 10));
+          addMoney(this.role === 'GUEST' ? 2 : 10);
+          showStatus(this.role === 'GUEST' ? "OBA!!" : `SALVE ${this.name}!`);
+          this.interacted = true;
+          checkMissions();
+        }
+      }
+
+      scheduleNextAction() {
+        const delay = 3000 + Math.random() * 5000;
         setTimeout(() => {
+          this.decideNextState();
+          this.scheduleNextAction();
+        }, delay);
+      }
+
+      decideNextState() {
+        if (this.role !== 'GUEST') return;
+        const rand = Math.random();
+        if (rand < 0.45) {
+          const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
+          const targetX = spot.x + (Math.random() * 8 - 4);
+          const targetY = spot.y + (Math.random() * 8 - 4);
+          const dx = targetX - this.x;
+          this.element.classList.remove('dancing');
+          this.element.classList.add('walking');
+          this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+          this.x = targetX;
+          this.y = targetY;
+          this.updatePos();
+          setTimeout(() => {
+            this.element.classList.remove('walking');
+            this.element.classList.add('dancing');
+          }, 3000);
+        } else if (rand < 0.85) {
           this.element.classList.remove('walking');
           this.element.classList.add('dancing');
-        }, 3000);
-      } else if (rand < 0.85) {
-        this.element.classList.remove('walking');
-        this.element.classList.add('dancing');
-      } else {
-        this.element.classList.remove('walking', 'dancing');
+        } else {
+          this.element.classList.remove('walking', 'dancing');
+        }
       }
-    }
 
-    move() { }
+      move() { }
     }
 
     let tutorialComplete = false;
@@ -863,35 +957,56 @@
         overlay.style.display = 'none';
       } else {
         overlay.style.display = 'block';
-        const res = await fetch(`${API_URL}/loja/itens`);
-        const itens = await res.json();
-        const lista = document.getElementById('loja-lista');
-        lista.innerHTML = '';
-        itens.forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'shop-item';
-          div.innerHTML = `
-            <div style="font-size: 24px;">${item.name}</div>
-            <div style="font-size: 12px; color: #888; margin: 10px 0;">${item.description}</div>
-            <div class="money-stat">$${item.price}</div>
-            <button class="btn" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;" 
-              ${dinheiro < item.price ? 'disabled style="opacity:0.5"' : ''}
-              onclick="buyItem('${item.id}', ${item.price})">COMPRAR</button>
-          `;
-          lista.appendChild(div);
-        });
+        loadShopItems('all');
       }
     }
 
-    function buyItem(id, price) {
+    async function loadShopItems(category) {
+      shopCategory = category;
+      const tabs = document.querySelectorAll('.shop-tab');
+      tabs.forEach(t => t.classList.remove('active'));
+      // Update active tab UI...
+
+      const res = await fetch(`${API_URL}/loja/itens`);
+      let itens = await res.json();
+
+      if (category !== 'all') {
+        itens = itens.filter(i => i.type === category);
+      }
+
+      const lista = document.getElementById('loja-lista');
+      lista.innerHTML = '';
+      itens.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+          <div style="font-size: 24px;">${item.name}</div>
+          <div style="font-size: 12px; color: #888; margin: 10px 0;">${item.description}</div>
+          <div class="money-stat">$${item.price}</div>
+          <button class="btn" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;" 
+            ${dinheiro < item.price ? 'disabled style="opacity:0.5"' : ''}
+            onclick="buyItem('${item.id}', ${item.price}, '${item.type}', '${item.name}')">COMPRAR</button>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    function buyItem(id, price, type, name) {
       if (dinheiro >= price) {
         dinheiro -= price;
         showStatus("COMPRADO!", true);
-        if (id === 'vip_pass') addFama(100);
-        if (id === 'energy_drink') addFama(50);
+
+        if (type === 'gift') {
+          inventario.push({ id, name });
+        } else {
+          if (id === 'vip_pass') addFama(100);
+          if (id === 'energy_drink') addFama(50);
+          if (id === 'golden_mic') addFama(200);
+        }
+
         atualizarInterface();
         salvarProgresso();
-        toggleShop();
+        loadShopItems(shopCategory);
       }
     }
 
@@ -899,6 +1014,41 @@
       document.getElementById('fama').innerText = fama;
       document.getElementById('dinheiro').innerText = `$${dinheiro}`;
       document.getElementById('missao').innerText = chapters[chapter];
+    }
+
+    function showGiftMenu(npcRole, npcName) {
+      if (inventario.length === 0) {
+        showDialogue("SISTEMA", "Você não tem nenhum presente no inventário. Visite a LOJA!");
+        return;
+      }
+
+      const listHtml = inventario.map((item, idx) => `
+        <div class="shop-item" style="cursor:pointer; margin-bottom:5px;" onclick="darPresente(${idx}, '${npcRole}', '${npcName}')">
+          ${item.name}
+        </div>
+      `).join('');
+
+      const box = document.getElementById('dialogue-box');
+      box.innerHTML = `
+        <div id="dialogue-name">SELECIONE UM PRESENTE</div>
+        <div id="dialogue-text">${listHtml}</div>
+        <button class="btn" style="margin-top:10px;" onclick="document.getElementById('dialogue-box').style.display='none'">CANCELAR</button>
+      `;
+      box.style.display = 'block';
+    }
+
+    function darPresente(itemIdx, npcRole, npcName) {
+      const item = inventario[itemIdx];
+      inventario.splice(itemIdx, 1);
+
+      let reaction = "Ah, que gentil! Muito obrigada.";
+      if (npcRole === 'LIA') reaction = "Uau! Isso é lindo! Você realmente sabe como tratar uma dama.";
+      if (npcRole === 'ALEX') reaction = "Valeu, parceiro! Isso vai ajudar a manter o ânimo aqui na boate.";
+      if (npcRole === 'BOSS') reaction = "Hm... Aceitável. Continue trabalhando duro.";
+
+      addFama(50);
+      showDialogue(npcName, reaction);
+      showStatus("PRESENTE ENTREGUE! +50 FAMA", true);
     }
 
     function showStatus(text, long = false) {
@@ -933,6 +1083,11 @@
       if (!playlist.length) return;
       const track = playlist[musicasTrocadas % playlist.length];
       audio.play(track.url);
+
+      // Update Music Panel
+      const info = document.getElementById('music-info');
+      info.innerText = `${track.title} - ${track.artist || 'Unknown'}`;
+
       if (track.title) showStatus(`TRACK: ${track.title}`, true);
     }
 

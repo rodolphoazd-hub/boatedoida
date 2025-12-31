@@ -19,5 +19,26 @@
         "price": 500,
         "description": "O dobro de fama em todas as interações.",
         "type": "gear"
+    },
+    {
+        "id": "gift_rose",
+        "name": "Rosa de Neon 🌹",
+        "price": 50,
+        "description": "Um presente elegante para conquistar alguém.",
+        "type": "gift"
+    },
+    {
+        "id": "gift_champagne",
+        "name": "Champagne Digital 🍾",
+        "price": 200,
+        "description": "O presente supremo para os VIPs mais exigentes.",
+        "type": "gift"
+    },
+    {
+        "id": "gift_chocolate",
+        "name": "Bombom de Glitch 🍫",
+        "price": 30,
+        "description": "Um agrado doce e tecnológico.",
+        "type": "gift"
     }
 ]

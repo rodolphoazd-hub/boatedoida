@@ -43,67 +43,67 @@
       pointer-events: none;
     }
 
-    /* Stylized 2D NPC Filter */
+    /* Realistic 2D NPC Filter */
     .npc-2d {
-      filter: url(#remove-green) brightness(1.1) contrast(1.1);
+      filter: drop-shadow(0 15px 10px rgba(0, 0, 0, 0.5));
       image-rendering: auto;
-      /* Return to smooth rendering */
     }
 
     .character {
       position: absolute;
       width: 150px;
       height: 150px;
-      background-image: url('assets/characters_green.png');
-      background-size: 600px 600px;
+      background-image: url('assets/character_red.png');
+      background-size: 1500px 300px;
+      /* Adjusting for sprite sheet layout */
       cursor: pointer;
       z-index: 10;
-      transition: left 4s linear, top 4s linear;
+      transition: left 3.5s cubic-bezier(0.4, 0, 0.2, 1), top 3.5s cubic-bezier(0.4, 0, 0.2, 1);
       transform-origin: bottom center;
       will-change: left, top, transform;
     }
 
-    /* Smooth 2D Walking Animation */
-    @keyframes smooth-walk {
+    /* Realistic 2D Walking Animation (Secondary Motion) */
+    @keyframes realistic-walk {
       0% {
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(0) rotate(0deg) scale(1);
       }
 
       25% {
-        transform: translateY(-8px) rotate(3deg);
+        transform: translateY(-5px) rotate(2deg) scale(1.02);
       }
 
       50% {
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(0) rotate(0deg) scale(1);
       }
 
       75% {
-        transform: translateY(-8px) rotate(-3deg);
+        transform: translateY(-5px) rotate(-2deg) scale(1.02);
       }
 
       100% {
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(0) rotate(0deg) scale(1);
       }
     }
 
     .walking {
-      animation: smooth-walk 0.8s infinite ease-in-out;
+      animation: realistic-walk 1.2s infinite ease-in-out;
     }
 
-    @keyframes smooth-bounce {
+    @keyframes realistic-dance {
 
       0%,
       100% {
-        transform: scale(1);
+        transform: scale(1) translateY(0);
       }
 
       50% {
-        transform: scale(1.05) translateY(-5px);
+        transform: scale(1.03) translateY(-8px);
       }
     }
 
     .dancing {
-      animation: smooth-bounce 0.6s infinite ease-in-out;
+      animation: realistic-dance 0.8s infinite ease-in-out;
     }
 
     /* Pixel Grid Overlay */
@@ -430,10 +430,8 @@
           this.element.onclick = () => this.interact();
         }
 
-        // Sheet mapping
-        const row = Math.floor(index / 4);
-        const col = index % 4;
-        this.element.style.backgroundPosition = `-${col * 150}px -${row * 300}px`;
+        // Horizontal Sheet Mapping for character_red.png (10 sprites)
+        this.element.style.backgroundPosition = `-${index * 150}px 0px`;
 
         document.getElementById('world').appendChild(this.element);
         this.updatePos();
@@ -475,7 +473,7 @@
           setTimeout(() => {
             this.element.classList.remove('walking');
             this.element.classList.add('dancing');
-          }, 4000);
+          }, 3500); // Decoupled from CSS for better control
 
         } else if (rand < 0.85) {
           this.element.classList.remove('walking');
@@ -485,49 +483,37 @@
         }
       }
 
-      // Manual move loop no longer needed thanks to CSS transitions
       move() { }
 
       interact() {
         showTip(this.element);
         addFama(this.role === 'GUEST' ? 5 : 15);
-        showStatus(this.role === 'GUEST' ? "ISSO AÍ!" : `HELLO ${this.role}!`);
+        showStatus(this.role === 'GUEST' ? "SHOW!" : `DÁ-LHE ${this.role}!`);
 
         if (missaoAtual === 0) {
           this.interacted = true;
           const interactedCount = characters.filter(c => c.interacted).length;
           if (interactedCount >= 3) completarMissao();
         }
-
-        if (fama >= 50 && missaoAtual === 2) completarMissao();
-        if (fama >= 100 && missaoAtual === 3) completarMissao();
       }
     }
 
     function spawnCharacters() {
-      // 1. Spawn DJ
-      characters.push(new GameCharacter(4, { x: 50, y: 30 }, 'DJ'));
+      // 1. Spawn DJ (using a cool sprite from character_red)
+      characters.push(new GameCharacter(0, { x: 50, y: 30 }, 'DJ'));
 
       // 2. Spawn Barman
-      characters.push(new GameCharacter(5, { x: 25, y: 50 }, 'BARMAN'));
+      characters.push(new GameCharacter(2, { x: 25, y: 50 }, 'BARMAN'));
 
       // 3. Spawn Security
-      characters.push(new GameCharacter(1, { x: 85, y: 80 }, 'SECURITY'));
+      characters.push(new GameCharacter(1, { x: 80, y: 80 }, 'SECURITY'));
 
-      // 4. Spawn Photographer
-      characters.push(new GameCharacter(12, { x: 40, y: 60 }, 'PHOTOGRAPHER'));
-
-      // 5. Spawn VIPs
-      for (let i = 0; i < 3; i++) {
-        characters.push(new GameCharacter(10, { x: 75 + i * 5, y: 50 }, 'VIP'));
-      }
-
-      // 6. Spawn Guests
-      for (let i = 0; i < 35; i++) {
+      // 4. Spawn Guests (randomized variety from the 10 sprites)
+      for (let i = 0; i < 40; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
-        characters.push(new GameCharacter(i % 16, {
-          x: spot.x + (Math.random() * 18 - 9),
-          y: spot.y + (Math.random() * 18 - 9)
+        characters.push(new GameCharacter(Math.floor(Math.random() * 10), {
+          x: spot.x + (Math.random() * 20 - 10),
+          y: spot.y + (Math.random() * 20 - 10)
         }, 'GUEST'));
       }
     }

@@ -432,11 +432,11 @@
     }
 
     function spawnCharacters() {
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 20; i++) {
         const spot = HOTSPOTS[i % HOTSPOTS.length];
-        characters.push(new GameCharacter(i, {
-          x: spot.x + (Math.random() * 10 - 5),
-          y: spot.y + (Math.random() * 10 - 5)
+        characters.push(new GameCharacter(i % 16, {
+          x: spot.x + (Math.random() * 15 - 7.5),
+          y: spot.y + (Math.random() * 15 - 7.5)
         }));
       }
     }

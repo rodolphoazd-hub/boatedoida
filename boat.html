@@ -337,6 +337,12 @@
     <button class="btn" onclick="iniciarJogo()">START THE PARTY</button>
   </div>
 
+  <div id="dialogue-box" class="glass-panel">
+    <div id="dialogue-name"></div>
+    <div id="dialogue-text"></div>
+    <div style="font-size: 10px; color: #888; margin-top: 10px; text-align: right;">[ CLIQUE PARA CONTINUAR ]</div>
+  </div>
+
   <div id="club">
     <div id="top-bar">
       <div id="info-panel" class="glass-panel" style="position: static; padding: 5px 15px;">
@@ -385,9 +391,9 @@
     const API_URL = 'http://localhost:3000';
     let nomeJogador = "";
     let fama = 0;
-    let missaoAtual = 0;
+    let chapter = 0;
     let musicasTrocadas = 0;
-    const characters = [];
+    let characters = [];
 
     const missoes = [
       "Anime a pista! (Interaja com 3 pessoas)",
@@ -427,7 +433,7 @@
         const res = await fetch(`${API_URL}/progresso/${nomeJogador}`);
         const data = await res.json();
         fama = data.fama || 0;
-        missaoAtual = data.missao || 0;
+        chapter = data.chapter || 0;
       } catch (e) {
         console.warn("Offline mode active");
       }
@@ -438,7 +444,7 @@
         await fetch(`${API_URL}/progresso/${nomeJogador}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fama, missao: missaoAtual })
+          body: JSON.stringify({ fama, chapter })
         });
       } catch (e) { }
     }
@@ -593,7 +599,6 @@
       move() { }
     }
 
-    let chapter = 0;
     let tutorialComplete = false;
     const chapters = [
       "Tutorial: Conheça Alex",
@@ -661,12 +666,13 @@
     }
 
     function completarMissao() {
-      missaoAtual++;
-      addFama(20);
-      showStatus("MISSÃO CUMPRIDA!", true);
+      chapter++;
+      addFama(50);
+      showStatus("CAPÍTULO CONCLUÍDO!", true);
+      spawnCharacters();
       atualizarInterface();
 
-      if (missaoAtual >= missoes.length - 1) {
+      if (chapter >= chapters.length) {
         setTimeout(finalizarJogo, 3000);
       }
     }

@@ -43,11 +43,11 @@
       pointer-events: none;
     }
 
-    /* SVG Filter to remove green and add pixel-art contrast */
-    .pixel-art {
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      filter: url(#remove-green) contrast(1.2) brightness(1.1);
+    /* Stylized 2D NPC Filter */
+    .npc-2d {
+      filter: url(#remove-green) brightness(1.1) contrast(1.1);
+      image-rendering: auto;
+      /* Return to smooth rendering */
     }
 
     .character {
@@ -63,14 +63,14 @@
       will-change: left, top, transform;
     }
 
-    /* Pixel Walking Animation */
-    @keyframes pixel-walk {
+    /* Smooth 2D Walking Animation */
+    @keyframes smooth-walk {
       0% {
         transform: translateY(0) rotate(0deg);
       }
 
       25% {
-        transform: translateY(-10px) rotate(5deg);
+        transform: translateY(-8px) rotate(3deg);
       }
 
       50% {
@@ -78,7 +78,7 @@
       }
 
       75% {
-        transform: translateY(-10px) rotate(-5deg);
+        transform: translateY(-8px) rotate(-3deg);
       }
 
       100% {
@@ -87,23 +87,23 @@
     }
 
     .walking {
-      animation: pixel-walk 0.6s infinite steps(4);
+      animation: smooth-walk 0.8s infinite ease-in-out;
     }
 
-    @keyframes bounce {
+    @keyframes smooth-bounce {
 
       0%,
       100% {
-        transform: scaleY(1);
+        transform: scale(1);
       }
 
       50% {
-        transform: scaleY(0.9) translateY(2px);
+        transform: scale(1.05) translateY(-5px);
       }
     }
 
     .dancing {
-      animation: bounce 0.4s infinite steps(2);
+      animation: smooth-bounce 0.6s infinite ease-in-out;
     }
 
     /* Pixel Grid Overlay */
@@ -413,7 +413,7 @@
     class GameCharacter {
       constructor(index, startPos, role = 'GUEST') {
         this.element = document.createElement('div');
-        this.element.className = 'character pixel-art dancing';
+        this.element.className = 'character npc-2d dancing';
         this.x = startPos.x;
         this.y = startPos.y;
         this.role = role;

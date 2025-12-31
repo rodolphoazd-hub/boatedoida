@@ -43,9 +43,11 @@
       pointer-events: none;
     }
 
-    /* SVG Filter to remove green background */
-    .chroma-key {
-      filter: url(#remove-green);
+    /* SVG Filter to remove green and add pixel-art contrast */
+    .pixel-art {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: url(#remove-green) contrast(1.2) brightness(1.1);
     }
 
     .character {
@@ -55,29 +57,65 @@
       background-image: url('assets/characters_green.png');
       background-size: 600px 600px;
       cursor: pointer;
-      transition: transform 0.2s;
       z-index: 10;
+      transition: left 4s linear, top 4s linear;
+      transform-origin: bottom center;
+      will-change: left, top, transform;
     }
 
-    .character:hover {
-      transform: scale(1.1);
-      filter: url(#remove-green) brightness(1.3) drop-shadow(0 0 10px var(--primary-neon));
+    /* Pixel Walking Animation */
+    @keyframes pixel-walk {
+      0% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      25% {
+        transform: translateY(-10px) rotate(5deg);
+      }
+
+      50% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      75% {
+        transform: translateY(-10px) rotate(-5deg);
+      }
+
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+    }
+
+    .walking {
+      animation: pixel-walk 0.6s infinite steps(4);
     }
 
     @keyframes bounce {
 
       0%,
       100% {
-        transform: translateY(0);
+        transform: scaleY(1);
       }
 
       50% {
-        transform: translateY(-8px);
+        transform: scaleY(0.9) translateY(2px);
       }
     }
 
     .dancing {
-      animation: bounce 0.5s infinite alternate ease-in-out;
+      animation: bounce 0.4s infinite steps(2);
+    }
+
+    /* Pixel Grid Overlay */
+    #club::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 4px 4px;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
     }
 
     #dj-booth {
@@ -311,13 +349,9 @@
     class GameCharacter {
       constructor(index, startPos) {
         this.element = document.createElement('div');
-        this.element.className = 'character chroma-key dancing';
+        this.element.className = 'character pixel-art dancing';
         this.x = startPos.x;
         this.y = startPos.y;
-        this.targetX = this.x;
-        this.targetY = this.y;
-        this.speed = 0.04 + Math.random() * 0.04;
-        this.state = 'DANCING';
         this.interacted = false;
 
         // Sheet mapping (assume 4x2 layout)
@@ -338,7 +372,7 @@
       }
 
       scheduleNextAction() {
-        const delay = 4000 + Math.random() * 8000;
+        const delay = 3000 + Math.random() * 5000;
         setTimeout(() => {
           this.decideNextState();
           this.scheduleNextAction();
@@ -346,44 +380,40 @@
       }
 
       decideNextState() {
-        if (this.state === 'WALKING') return;
-
         const rand = Math.random();
-        if (rand < 0.35) {
+
+        if (rand < 0.45) {
+          // WALK MOVE
           const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
-          this.targetX = spot.x + (Math.random() * 8 - 4);
-          this.targetY = spot.y + (Math.random() * 8 - 4);
-          this.state = 'WALKING';
+          const targetX = spot.x + (Math.random() * 8 - 4);
+          const targetY = spot.y + (Math.random() * 8 - 4);
+
+          const dx = targetX - this.x;
+          // Apply walking style and direction
           this.element.classList.remove('dancing');
+          this.element.classList.add('walking');
+          this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+
+          this.x = targetX;
+          this.y = targetY;
+          this.updatePos();
+
+          // Switch back to dancing when arrival (approx 4s)
+          setTimeout(() => {
+            this.element.classList.remove('walking');
+            this.element.classList.add('dancing');
+          }, 4000);
+
         } else if (rand < 0.85) {
-          this.state = 'DANCING';
+          this.element.classList.remove('walking');
           this.element.classList.add('dancing');
         } else {
-          this.state = 'IDLE';
-          this.element.classList.remove('dancing');
+          this.element.classList.remove('walking', 'dancing');
         }
       }
 
-      move() {
-        if (this.state !== 'WALKING') return;
-
-        const dx = this.targetX - this.x;
-        const dy = this.targetY - this.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 0.3) {
-          this.x = this.targetX;
-          this.y = this.targetY;
-          this.state = 'DANCING';
-          this.element.classList.add('dancing');
-          return;
-        }
-
-        this.element.style.transform = dx > 0 ? 'scaleX(1)' : 'scaleX(-1)';
-        this.x += (dx / dist) * this.speed;
-        this.y += (dy / dist) * this.speed;
-        this.updatePos();
-      }
+      // Manual move loop no longer needed thanks to CSS transitions
+      move() { }
 
       interact() {
         showTip(this.element);

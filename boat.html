@@ -518,35 +518,49 @@
     }
 
     async function carregarProgresso() {
+      // Hardcoded fallbacks for resilience
+      const fallbackPlaylist = [
+        { url: 'assets/music1.mp3', title: "Cyber Night", artist: "SynthWave Pro" },
+        { url: 'assets/music2.mp3', title: "Neon Pulse", artist: "Glitch Master" }
+      ];
+
       try {
         const res = await fetch(`${API_URL}/progresso/${nomeJogador}`);
-        const data = await res.json();
-        fama = data.fama || 0;
-        chapter = data.chapter || 0;
-        dinheiro = data.dinheiro || 100;
+        if (res.ok) {
+          const data = await res.json();
+          fama = data.fama || 0;
+          chapter = data.chapter || 0;
+          dinheiro = data.dinheiro || 100;
+        }
+      } catch (e) { console.warn("Could not load progress from server"); }
 
-        // Fetch from Jamendo API for real "online" music (Cyberpunk/Electronic tags)
-        try {
-          const jamendoRes = await fetch('https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=jsonptr&limit=10&tags=cyberpunk,electronic&order=popularity_week');
-          const jamendoData = await jamendoRes.json();
+      // Fetch from Jamendo API for real "online" music
+      try {
+        const jamendoRes = await fetch('https://api.jamendo.com/v3.0/tracks/?client_id=56d30c95&format=json&limit=10&tags=cyberpunk,electronic&order=popularity_week');
+        const jamendoData = await jamendoRes.json();
+        if (jamendoData.results && jamendoData.results.length > 0) {
           playlist = jamendoData.results.map(t => ({
             id: t.id,
             title: t.name,
             artist: t.artist_name,
             url: t.audio
           }));
-        } catch (je) {
-          console.warn("Jamendo API failed, using fallback");
-          const musicasRes = await fetch(`${API_URL}/musicas`);
-          playlist = await musicasRes.json();
+        } else {
+          throw new Error("No Jamendo results");
         }
-      } catch (e) {
-        console.warn("Offline mode active");
-        playlist = [
-          { url: 'assets/music1.mp3', title: "Local Track 1", artist: "Internal" },
-          { url: 'assets/music2.mp3', title: "Local Track 2", artist: "Internal" }
-        ];
+      } catch (je) {
+        console.warn("Jamendo API failed, using server/local fallback");
+        try {
+          const musicasRes = await fetch(`${API_URL}/musicas`);
+          if (musicasRes.ok) {
+            playlist = await musicasRes.json();
+          } else { throw new Error(); }
+        } catch (me) {
+          playlist = fallbackPlaylist;
+        }
       }
+
+      if (!playlist || playlist.length === 0) playlist = fallbackPlaylist;
     }
 
     async function salvarProgresso() {
@@ -993,8 +1007,21 @@
         }
       });
 
-      const res = await fetch(`${API_URL}/loja/itens`);
-      let itens = await res.json();
+      let itens = [];
+      try {
+        const res = await fetch(`${API_URL}/loja/itens`);
+        if (res.ok) {
+          itens = await res.json();
+        } else { throw new Error(); }
+      } catch (e) {
+        console.warn("Using offline shop data");
+        itens = [
+          { "id": "vip_pass", "name": "VIP Pass 🎫", "price": 100, "description": "Offline mode: permanent VIP access.", "type": "upgrade" },
+          { "id": "energy_drink", "name": "Nitro Energy ⚡", "price": 25, "description": "Instant energy boost.", "type": "consumable" },
+          { "id": "gift_rose", "name": "Rosa de Neon 🌹", "price": 50, "description": "Standard gift.", "type": "gift" },
+          { "id": "gift_champagne", "name": "Champagne 🍾", "price": 200, "description": "Premium gift.", "type": "gift" }
+        ];
+      }
 
       if (category !== 'all') {
         itens = itens.filter(i => i.type === category);
